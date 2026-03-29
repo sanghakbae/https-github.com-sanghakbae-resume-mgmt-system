@@ -3,6 +3,7 @@ import { CodeXml, Download, Eye, LogOut, Pencil, RotateCcw, Save, ShieldCheck } 
 import html2canvas from "html2canvas";
 import jsPDF from "jspdf";
 import { LoginPage } from "@/components/auth/login-page";
+import { GoogleSignInButton } from "@/components/auth/google-sign-in-button";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent } from "@/components/ui/card";
 import { CompanyForm } from "@/components/resume/company-form";
@@ -53,7 +54,12 @@ export default function App() {
     .split(",")
     .map((value) => value.trim().toLowerCase())
     .filter(Boolean);
+  const editorEmails = ((import.meta.env.VITE_EDITOR_EMAILS as string | undefined) ?? "")
+    .split(",")
+    .map((value) => value.trim().toLowerCase())
+    .filter(Boolean);
   const isAdmin = !isPublicResumeMode && user ? adminEmails.includes(user.email.toLowerCase()) : false;
+  const isPublicEditor = isPublicResumeMode && user ? editorEmails.includes(user.email.toLowerCase()) : false;
   const [isEditMode, setIsEditMode] = useState(true);
   const [companyForm, setCompanyForm] = useState<CompanyFormValues>(emptyCompanyForm);
   const [companyErrors, setCompanyErrors] = useState<CompanyValidationErrors>({});
@@ -66,7 +72,7 @@ export default function App() {
   const [isExportingHtml, setIsExportingHtml] = useState(false);
   const exportSectionRef = useRef<HTMLDivElement | null>(null);
   const activeOwnerId = isPublicResumeMode ? "public-resume" : isAdmin ? selectedOwnerId ?? user?.sub ?? "" : user?.sub ?? "";
-  const effectiveIsEditMode = isPublicResumeMode ? false : isEditMode;
+  const effectiveIsEditMode = isPublicResumeMode ? isPublicEditor && isEditMode : isEditMode;
   const {
     profile,
     setProfile,
@@ -369,7 +375,9 @@ export default function App() {
               <h1 className="text-xl font-semibold tracking-tight sm:text-2xl">이력서 페이지</h1>
               <p className="mt-1 text-[13px] leading-5 text-slate-500">
                 {isPublicResumeMode
-                  ? "공개 이력서 페이지입니다. 접속한 누구나 동일한 이력서를 볼 수 있습니다."
+                  ? isPublicEditor
+                    ? "공개 이력서 페이지입니다. 본인 계정으로 로그인되어 현재 브라우저에서 편집할 수 있습니다."
+                    : "공개 이력서 페이지입니다. 접속한 누구나 동일한 이력서를 볼 수 있습니다."
                   : `${user?.name ?? ""} 계정으로 로그인되어 있습니다. ${isAdmin ? "관리자 권한으로 작업공간 전환이 가능합니다." : "내용은 사용자별 작업 공간에 저장됩니다."}`}
               </p>
             </div>
@@ -392,9 +400,37 @@ export default function App() {
                   ) : null}
                 </>
               ) : (
-                <div className="flex w-full items-center gap-2 rounded-[10px] border border-slate-200 bg-slate-50 px-3 py-2 text-[12px] font-medium leading-4 text-slate-600 md:w-auto">
-                  공개용 레주메
-                </div>
+                <>
+                  <div className="flex w-full items-center gap-2 rounded-[10px] border border-slate-200 bg-slate-50 px-3 py-2 text-[12px] font-medium leading-4 text-slate-600 md:w-auto">
+                    {isPublicEditor ? "공개용 레주메 · 편집 가능" : "공개용 레주메"}
+                  </div>
+                  {user ? (
+                    <div className="flex w-full items-center gap-3 rounded-[10px] border border-slate-200 bg-slate-50 px-3 py-2 md:w-auto">
+                      {user.picture ? <img src={user.picture} alt={user.name} className="h-8 w-8 rounded-full" referrerPolicy="no-referrer" /> : null}
+                      <div className="min-w-0 text-left">
+                        <p className="truncate text-[13px] font-medium leading-5 text-slate-900">{user.name}</p>
+                        <p className="truncate text-[12px] leading-4 text-slate-500">
+                          {isPublicEditor ? "편집 권한 계정" : "읽기 전용 계정"}
+                        </p>
+                      </div>
+                    </div>
+                  ) : null}
+                  {!user && googleClientId ? (
+                    <div className="w-full min-w-[220px] md:w-[280px]">
+                      <GoogleSignInButton clientId={googleClientId} disabled={!isReady} onSuccess={signIn} />
+                    </div>
+                  ) : null}
+                  {!user && !googleClientId ? (
+                    <div className="flex w-full items-center rounded-[10px] border border-amber-200 bg-amber-50 px-3 py-2 text-[12px] leading-4 text-amber-700 md:w-auto">
+                      `VITE_GOOGLE_CLIENT_ID`를 설정하면 본인 로그인 후 편집 잠금을 해제할 수 있습니다.
+                    </div>
+                  ) : null}
+                  {authError ? (
+                    <div className="flex w-full items-center rounded-[10px] border border-rose-200 bg-rose-50 px-3 py-2 text-[12px] leading-4 text-rose-700 md:w-auto">
+                      {authError}
+                    </div>
+                  ) : null}
+                </>
               )}
               {!isPublicResumeMode ? (
                 <>
@@ -430,10 +466,10 @@ export default function App() {
                 <Download className="mr-2 h-4 w-4" />
                 {isExportingPdf ? "PDF 생성 중" : "PDF 저장"}
               </Button>
-              {!isPublicResumeMode ? (
+              {!isPublicResumeMode || user ? (
                 <Button className="w-full border border-slate-200 bg-white px-4 py-2 text-slate-700 md:w-auto" onClick={signOut}>
                   <LogOut className="mr-2 h-4 w-4" />
-                  로그아웃
+                  {isPublicResumeMode ? "편집 로그아웃" : "로그아웃"}
                 </Button>
               ) : null}
             </div>
@@ -470,6 +506,16 @@ export default function App() {
                       workspaces={workspaceSummaries}
                       onSelect={setSelectedOwnerId}
                     />
+                  ) : null}
+                  {isPublicResumeMode ? (
+                    <Card className="rounded-[10px] border border-amber-200 bg-amber-50 shadow-sm screen-only">
+                      <CardContent className="space-y-2 p-3.5 sm:p-4">
+                        <h2 className="text-base font-semibold leading-6 text-amber-900">공개 페이지 편집 안내</h2>
+                        <p className="text-[13px] leading-5 text-amber-800">
+                          현재 편집은 이 브라우저 작업공간에 저장됩니다. GitHub Pages 정적 배포본 특성상 수정 내용이 모든 방문자에게 즉시 공유되지는 않습니다.
+                        </p>
+                      </CardContent>
+                    </Card>
                   ) : null}
                   <ProfileForm profile={profile} onChange={setProfile} />
                   <CompanyForm
