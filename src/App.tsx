@@ -1,5 +1,5 @@
 import { useEffect, useMemo, useRef, useState } from "react";
-import { CodeXml, Download, Eye, LogOut, Pencil, RotateCcw, Save, ShieldCheck } from "lucide-react";
+import { Download, Eye, LogOut, Pencil, RotateCcw, Save, ShieldCheck } from "lucide-react";
 import html2canvas from "html2canvas";
 import jsPDF from "jspdf";
 import { LoginPage } from "@/components/auth/login-page";
@@ -72,7 +72,6 @@ export default function App() {
   const [editingId, setEditingId] = useState<number | null>(null);
   const [selectedOwnerId, setSelectedOwnerId] = useState<string | null>(null);
   const [isExportingPdf, setIsExportingPdf] = useState(false);
-  const [isExportingHtml, setIsExportingHtml] = useState(false);
   const [isUploadingProfilePhoto, setIsUploadingProfilePhoto] = useState(false);
   const [isUploadingExperienceImage, setIsUploadingExperienceImage] = useState(false);
   const exportSectionRef = useRef<HTMLDivElement | null>(null);
@@ -337,59 +336,6 @@ export default function App() {
     }, 50);
   };
 
-  const exportHtml = async () => {
-    const exportNode = exportSectionRef.current;
-    if (!exportNode || isExportingHtml) return;
-
-    setIsExportingHtml(true);
-
-    try {
-      const styles = [...document.querySelectorAll('style, link[rel="stylesheet"]')]
-        .map((node) => node.outerHTML)
-        .join("\n");
-
-      const html = `<!doctype html>
-<html lang="ko">
-<head>
-  <meta charset="utf-8" />
-  <meta name="viewport" content="width=device-width, initial-scale=1" />
-  <title>${profile.name || "resume"} HTML Export</title>
-  ${styles}
-  <style>
-    body {
-      margin: 0;
-      background: #f1f5f9;
-      color: #0f172a;
-      font-family: "Pretendard", "Noto Sans KR", system-ui, sans-serif;
-    }
-    .export-wrap {
-      max-width: 1280px;
-      margin: 0 auto;
-      padding: 24px;
-    }
-  </style>
-</head>
-<body>
-  <div class="export-wrap">
-    ${exportNode.innerHTML}
-  </div>
-</body>
-</html>`;
-
-      const blob = new Blob([html], { type: "text/html;charset=utf-8" });
-      const url = URL.createObjectURL(blob);
-      const anchor = document.createElement("a");
-      anchor.href = url;
-      anchor.download = `${profile.name || "resume"}-dashboard.html`;
-      document.body.appendChild(anchor);
-      anchor.click();
-      anchor.remove();
-      URL.revokeObjectURL(url);
-    } finally {
-      setIsExportingHtml(false);
-    }
-  };
-
   if (!isPublicResumeMode && !user) {
     return <LoginPage clientId={googleClientId} isReady={isReady} error={authError} onLogin={signIn} />;
   }
@@ -493,10 +439,6 @@ export default function App() {
                   </Button>
                 </>
               ) : null}
-              <Button className="w-full border border-slate-200 bg-white px-4 py-2 text-slate-700 md:w-auto" onClick={() => void exportHtml()} disabled={isExportingHtml}>
-                <CodeXml className="mr-2 h-4 w-4" />
-                {isExportingHtml ? "HTML 생성 중" : "HTML 출력"}
-              </Button>
               <Button className="w-full border border-slate-200 bg-white px-4 py-2 text-slate-700 md:w-auto" onClick={exportPdf} disabled={isExportingPdf}>
                 <Download className="mr-2 h-4 w-4" />
                 {isExportingPdf ? "PDF 생성 중" : "PDF 저장"}
