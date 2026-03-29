@@ -34,8 +34,8 @@ jobs:
       - name: Build
         env:
           VITE_PUBLIC_RESUME_MODE: "true"
-          VITE_GOOGLE_CLIENT_ID: ${{ vars.VITE_GOOGLE_CLIENT_ID }}
-          VITE_EDITOR_EMAILS: ${{ vars.VITE_EDITOR_EMAILS }}
+          VITE_GOOGLE_CLIENT_ID: ${{ vars.VITE_GOOGLE_CLIENT_ID != '' && vars.VITE_GOOGLE_CLIENT_ID || secrets.VITE_GOOGLE_CLIENT_ID }}
+          VITE_EDITOR_EMAILS: ${{ vars.VITE_EDITOR_EMAILS != '' && vars.VITE_EDITOR_EMAILS || secrets.VITE_EDITOR_EMAILS }}
         run: npm run build
 
       - name: Setup Pages
