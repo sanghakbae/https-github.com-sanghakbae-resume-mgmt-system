@@ -422,7 +422,7 @@ export default function App() {
                   ) : null}
                   {!user && !googleClientId ? (
                     <div className="flex w-full items-center rounded-[10px] border border-amber-200 bg-amber-50 px-3 py-2 text-[12px] leading-4 text-amber-700 md:w-auto">
-                      `VITE_GOOGLE_CLIENT_ID`를 설정하면 본인 로그인 후 편집 잠금을 해제할 수 있습니다.
+                      현재 배포본에 Google 로그인 설정이 연결되지 않아 편집 로그인을 사용할 수 없습니다.
                     </div>
                   ) : null}
                   {authError ? (
@@ -432,7 +432,7 @@ export default function App() {
                   ) : null}
                 </>
               )}
-              {!isPublicResumeMode ? (
+              {!isPublicResumeMode || isPublicEditor ? (
                 <>
                   <Button
                     className={isEditMode ? "w-full border border-slate-900 bg-slate-900 px-4 py-2 text-white md:w-auto" : "w-full border border-slate-200 bg-white px-4 py-2 text-slate-700 md:w-auto"}
@@ -448,10 +448,12 @@ export default function App() {
                     <Eye className="mr-2 h-4 w-4" />
                     공개 보기
                   </Button>
-                  <Button className="w-full border border-slate-200 bg-white px-4 py-2 text-slate-700 md:w-auto" onClick={restoreSampleData}>
-                    <RotateCcw className="mr-2 h-4 w-4" />
-                    샘플 복원
-                  </Button>
+                  {!isPublicResumeMode ? (
+                    <Button className="w-full border border-slate-200 bg-white px-4 py-2 text-slate-700 md:w-auto" onClick={restoreSampleData}>
+                      <RotateCcw className="mr-2 h-4 w-4" />
+                      샘플 복원
+                    </Button>
+                  ) : null}
                   <Button className="w-full border border-slate-200 bg-white px-4 py-2 text-slate-700 md:w-auto" onClick={() => void saveNow()} disabled={isSaving}>
                     <Save className="mr-2 h-4 w-4" />
                     {isSaving ? "저장 중" : "임시저장"}
