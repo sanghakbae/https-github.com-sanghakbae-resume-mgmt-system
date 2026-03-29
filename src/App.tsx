@@ -24,6 +24,8 @@ import type {
   WorkspaceSummary,
 } from "@/types/resume";
 
+const DEFAULT_GOOGLE_CLIENT_ID = "924920443826-lo1msns5cgvnh7u1714ikcqj2fq4srji.apps.googleusercontent.com";
+
 function validateExperience(form: ExperienceFormValues): ExperienceValidationErrors {
   const errors: ExperienceValidationErrors = {};
 
@@ -47,7 +49,7 @@ function validateCompany(form: CompanyFormValues): CompanyValidationErrors {
 }
 
 export default function App() {
-  const googleClientId = import.meta.env.VITE_GOOGLE_CLIENT_ID as string | undefined;
+  const googleClientId = ((import.meta.env.VITE_GOOGLE_CLIENT_ID as string | undefined) ?? DEFAULT_GOOGLE_CLIENT_ID).trim();
   const isPublicResumeMode = ((import.meta.env.VITE_PUBLIC_RESUME_MODE as string | undefined) ?? "false") === "true";
   const { user, isReady, error: authError, signIn, signOut } = useGoogleAuth();
   const adminEmails = ((import.meta.env.VITE_ADMIN_EMAILS as string | undefined) ?? "")
