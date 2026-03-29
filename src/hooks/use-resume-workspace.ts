@@ -7,9 +7,10 @@ type UseResumeWorkspaceArgs = {
   defaultProfile: Profile;
   defaultCompanies: CompanyProfile[];
   defaultExperiences: ExperienceItem[];
+  canSave?: boolean;
 };
 
-export function useResumeWorkspace({ ownerId, defaultProfile, defaultCompanies, defaultExperiences }: UseResumeWorkspaceArgs) {
+export function useResumeWorkspace({ ownerId, defaultProfile, defaultCompanies, defaultExperiences, canSave = true }: UseResumeWorkspaceArgs) {
   const [profile, setProfile] = useState<Profile>(defaultProfile);
   const [companies, setCompanies] = useState<CompanyProfile[]>(defaultCompanies);
   const [experiences, setExperiences] = useState<ExperienceItem[]>(defaultExperiences);
@@ -53,10 +54,12 @@ export function useResumeWorkspace({ ownerId, defaultProfile, defaultCompanies, 
 
   useEffect(() => {
     if (!ownerId || isLoading) return;
+    if (!canSave) return;
 
     const timer = window.setTimeout(() => {
       const workspace: ResumeWorkspace = {
         ownerId,
+        editorEmail: null,
         profile,
         companies,
         experiences,
@@ -81,7 +84,7 @@ export function useResumeWorkspace({ ownerId, defaultProfile, defaultCompanies, 
     return () => {
       window.clearTimeout(timer);
     };
-  }, [companies, experiences, isLoading, ownerId, profile]);
+  }, [canSave, companies, experiences, isLoading, ownerId, profile]);
 
   const resetWorkspace = () => {
     setProfile(defaultProfile);
@@ -92,10 +95,11 @@ export function useResumeWorkspace({ ownerId, defaultProfile, defaultCompanies, 
   const listWorkspaces = useCallback(() => listLocalWorkspaceSummaries(), []);
 
   const saveNow = useCallback(async () => {
-    if (!ownerId) return;
+    if (!ownerId || !canSave) return;
 
     const workspace: ResumeWorkspace = {
       ownerId,
+      editorEmail: null,
       profile,
       companies,
       experiences,
@@ -113,7 +117,7 @@ export function useResumeWorkspace({ ownerId, defaultProfile, defaultCompanies, 
     } finally {
       setIsSaving(false);
     }
-  }, [companies, experiences, ownerId, profile]);
+  }, [canSave, companies, experiences, ownerId, profile]);
 
   return {
     profile,

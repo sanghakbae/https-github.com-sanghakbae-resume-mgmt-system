@@ -50,6 +50,7 @@ export type GoogleUser = {
 
 export type ResumeWorkspace = {
   ownerId: string;
+  editorEmail?: string | null;
   profile: Profile;
   companies: CompanyProfile[];
   experiences: ExperienceItem[];

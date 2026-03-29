@@ -1,5 +1,6 @@
 import { useEffect, useState } from "react";
 import { normalizeGoogleUser, parseGoogleCredential } from "@/lib/google-auth";
+import { isSupabaseConfigured, supabase } from "@/lib/supabase";
 import type { GoogleCredentialResponse, GoogleWindow } from "@/types/google";
 import type { GoogleUser } from "@/types/resume";
 
@@ -69,8 +70,69 @@ export function useGoogleAuth() {
     };
   }, []);
 
-  const signIn = (response: GoogleCredentialResponse) => {
+  useEffect(() => {
+    if (!isSupabaseConfigured || !supabase) {
+      return;
+    }
+
+    let active = true;
+
+    supabase.auth.getSession().then(({ data }) => {
+      if (!active) return;
+
+      const sessionUser = data.session?.user;
+      if (!sessionUser?.email) return;
+
+      const nextUser = normalizeGoogleUser({
+        sub: sessionUser.id,
+        email: sessionUser.email,
+        name: sessionUser.user_metadata?.full_name ?? sessionUser.user_metadata?.name ?? sessionUser.email,
+        picture: sessionUser.user_metadata?.avatar_url,
+      });
+      window.localStorage.setItem(SESSION_STORAGE_KEY, JSON.stringify(nextUser));
+      setUser(nextUser);
+    });
+
+    const {
+      data: { subscription },
+    } = supabase.auth.onAuthStateChange((_event, session) => {
+      const sessionUser = session?.user;
+
+      if (!sessionUser?.email) {
+        window.localStorage.removeItem(SESSION_STORAGE_KEY);
+        setUser(null);
+        return;
+      }
+
+      const nextUser = normalizeGoogleUser({
+        sub: sessionUser.id,
+        email: sessionUser.email,
+        name: sessionUser.user_metadata?.full_name ?? sessionUser.user_metadata?.name ?? sessionUser.email,
+        picture: sessionUser.user_metadata?.avatar_url,
+      });
+      window.localStorage.setItem(SESSION_STORAGE_KEY, JSON.stringify(nextUser));
+      setUser(nextUser);
+    });
+
+    return () => {
+      active = false;
+      subscription.unsubscribe();
+    };
+  }, []);
+
+  const signIn = async (response: GoogleCredentialResponse) => {
     try {
+      if (isSupabaseConfigured && supabase) {
+        const { error: signInError } = await supabase.auth.signInWithIdToken({
+          provider: "google",
+          token: response.credential,
+        });
+
+        if (signInError) {
+          throw signInError;
+        }
+      }
+
       const nextUser = parseGoogleCredential(response.credential);
       window.localStorage.setItem(SESSION_STORAGE_KEY, JSON.stringify(nextUser));
       setUser(nextUser);
@@ -80,9 +142,13 @@ export function useGoogleAuth() {
     }
   };
 
-  const signOut = () => {
+  const signOut = async () => {
     window.localStorage.removeItem(SESSION_STORAGE_KEY);
     setUser(null);
+
+    if (isSupabaseConfigured && supabase) {
+      await supabase.auth.signOut({ scope: "local" });
+    }
 
     const googleWindow = window as GoogleWindow;
     googleWindow.google?.accounts.id.disableAutoSelect();

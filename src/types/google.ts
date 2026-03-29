@@ -19,7 +19,7 @@ export type GoogleWindow = Window & {
       id: {
         initialize: (config: {
           client_id: string;
-          callback: (response: GoogleCredentialResponse) => void;
+          callback: (response: GoogleCredentialResponse) => void | Promise<void>;
           auto_select?: boolean;
           ux_mode?: "popup" | "redirect";
         }) => void;

@@ -8,25 +8,45 @@ import type { ExperienceFormValues, ExperienceValidationErrors } from "@/types/r
 import { FormField } from "./form-field";
 
 type ExperienceFormProps = {
+  ownerId: string;
   form: ExperienceFormValues;
   errors: ExperienceValidationErrors;
   editingId: number | null;
   organizations?: string[];
+  isUploading?: boolean;
   onChange: Dispatch<SetStateAction<ExperienceFormValues>>;
   onSubmit: () => void;
   onCancel: () => void;
+  onUploadImage?: (file: File) => Promise<void>;
 };
 
-export function ExperienceForm({ form, errors, editingId, organizations = [], onChange, onSubmit, onCancel }: ExperienceFormProps) {
+export function ExperienceForm({
+  ownerId,
+  form,
+  errors,
+  editingId,
+  organizations = [],
+  isUploading = false,
+  onChange,
+  onSubmit,
+  onCancel,
+  onUploadImage,
+}: ExperienceFormProps) {
   const updateField = <K extends keyof ExperienceFormValues>(key: K, value: ExperienceFormValues[K]) => {
     onChange((prev) => ({ ...prev, [key]: value }));
   };
 
-  const handleImageChange = (event: ChangeEvent<HTMLInputElement>) => {
+  const handleImageChange = async (event: ChangeEvent<HTMLInputElement>) => {
     const file = event.target.files?.[0];
     if (!file) return;
 
     if (!file.type.startsWith("image/")) {
+      event.target.value = "";
+      return;
+    }
+
+    if (onUploadImage && ownerId) {
+      await onUploadImage(file);
       event.target.value = "";
       return;
     }
@@ -101,8 +121,8 @@ export function ExperienceForm({ form, errors, editingId, organizations = [], on
           <div className="space-y-2">
             <label className="flex cursor-pointer items-center justify-center gap-2 rounded-[10px] border border-dashed border-slate-300 bg-slate-50 px-3 py-3 text-[13px] font-medium leading-5 text-slate-700">
               <ImagePlus className="h-4 w-4" />
-              이미지 업로드
-              <input type="file" accept="image/*,.gif" className="hidden" onChange={handleImageChange} />
+              {isUploading ? "이미지 업로드 중" : "이미지 업로드"}
+              <input type="file" accept="image/*,.gif" className="hidden" onChange={(event) => void handleImageChange(event)} disabled={isUploading} />
             </label>
             <p className="text-[12px] leading-4 text-slate-500">PNG, JPG, GIF 모두 가능하며 폼 안에서 바로 미리보기 됩니다.</p>
             {form.image ? (

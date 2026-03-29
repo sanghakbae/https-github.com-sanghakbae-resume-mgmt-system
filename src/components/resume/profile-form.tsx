@@ -7,20 +7,29 @@ import type { Profile } from "@/types/resume";
 import { FormField } from "./form-field";
 
 type ProfileFormProps = {
+  ownerId: string;
   profile: Profile;
+  isUploading?: boolean;
   onChange: Dispatch<SetStateAction<Profile>>;
+  onUploadPhoto?: (file: File) => Promise<void>;
 };
 
-export function ProfileForm({ profile, onChange }: ProfileFormProps) {
+export function ProfileForm({ ownerId, profile, isUploading = false, onChange, onUploadPhoto }: ProfileFormProps) {
   const updateField = <K extends keyof Profile>(key: K, value: Profile[K]) => {
     onChange((prev) => ({ ...prev, [key]: value }));
   };
 
-  const handlePhotoChange = (event: ChangeEvent<HTMLInputElement>) => {
+  const handlePhotoChange = async (event: ChangeEvent<HTMLInputElement>) => {
     const file = event.target.files?.[0];
     if (!file) return;
 
     if (!file.type.startsWith("image/")) {
+      event.target.value = "";
+      return;
+    }
+
+    if (onUploadPhoto && ownerId) {
+      await onUploadPhoto(file);
       event.target.value = "";
       return;
     }
@@ -63,8 +72,8 @@ export function ProfileForm({ profile, onChange }: ProfileFormProps) {
           <div className="space-y-2">
             <label className="flex cursor-pointer items-center justify-center gap-2 rounded-[10px] border border-dashed border-slate-300 bg-slate-50 px-3 py-3 text-[13px] font-medium leading-5 text-slate-700">
               <ImagePlus className="h-4 w-4" />
-              사진 업로드
-              <input type="file" accept="image/*,.gif" className="hidden" onChange={handlePhotoChange} />
+              {isUploading ? "사진 업로드 중" : "사진 업로드"}
+              <input type="file" accept="image/*,.gif" className="hidden" onChange={(event) => void handlePhotoChange(event)} disabled={isUploading} />
             </label>
             <p className="text-[12px] leading-4 text-slate-500">PNG, JPG, GIF를 지원하며 공개 이력서 상단 프로필에 노출됩니다.</p>
             {profile.photo ? (

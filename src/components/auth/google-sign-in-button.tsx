@@ -4,7 +4,7 @@ import type { GoogleCredentialResponse, GoogleWindow } from "@/types/google";
 type GoogleSignInButtonProps = {
   clientId: string;
   disabled?: boolean;
-  onSuccess: (response: GoogleCredentialResponse) => void;
+  onSuccess: (response: GoogleCredentialResponse) => void | Promise<void>;
 };
 
 export function GoogleSignInButton({ clientId, disabled, onSuccess }: GoogleSignInButtonProps) {

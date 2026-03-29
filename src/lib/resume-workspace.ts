@@ -1,4 +1,5 @@
 import type { CompanyProfile, ExperienceItem, Profile, ResumeWorkspace, WorkspaceSummary } from "@/types/resume";
+import { isSupabaseConfigured, supabase } from "@/lib/supabase";
 
 const WORKSPACE_KEY_PREFIX = "resume.workspace.";
 
@@ -13,6 +14,7 @@ function getLocalWorkspaceKey(ownerId: string) {
 function createWorkspace(ownerId: string, profile: Profile, companies: CompanyProfile[], experiences: ExperienceItem[]): ResumeWorkspace {
   return {
     ownerId,
+    editorEmail: null,
     profile,
     companies,
     experiences,
@@ -21,10 +23,36 @@ function createWorkspace(ownerId: string, profile: Profile, companies: CompanyPr
 }
 
 export function getStorageMode() {
+  if (isSupabaseConfigured) return "supabase";
   return getApiBaseUrl() ? "api" : "local";
 }
 
 export async function loadWorkspace(ownerId: string, defaultProfile: Profile, defaultCompanies: CompanyProfile[], defaultExperiences: ExperienceItem[]) {
+  if (isSupabaseConfigured && supabase) {
+    const { data, error } = await supabase
+      .from("resume_workspaces")
+      .select("owner_id, editor_email, profile, companies, experiences, updated_at")
+      .eq("owner_id", ownerId)
+      .maybeSingle();
+
+    if (error) {
+      throw error;
+    }
+
+    if (!data) {
+      return createWorkspace(ownerId, defaultProfile, defaultCompanies, defaultExperiences);
+    }
+
+    return {
+      ownerId: data.owner_id,
+      editorEmail: data.editor_email ?? null,
+      profile: (data.profile as Profile) ?? defaultProfile,
+      companies: (data.companies as CompanyProfile[]) ?? defaultCompanies,
+      experiences: (data.experiences as ExperienceItem[]) ?? defaultExperiences,
+      updatedAt: data.updated_at ?? new Date().toISOString(),
+    };
+  }
+
   const apiBaseUrl = getApiBaseUrl();
 
   if (apiBaseUrl) {
@@ -59,6 +87,31 @@ export async function loadWorkspace(ownerId: string, defaultProfile: Profile, de
 }
 
 export async function saveWorkspace(workspace: ResumeWorkspace) {
+  if (isSupabaseConfigured && supabase) {
+    const {
+      data: { user },
+    } = await supabase.auth.getUser();
+    const editorEmail = user?.email ?? workspace.editorEmail ?? null;
+
+    const { error } = await supabase.from("resume_workspaces").upsert(
+      {
+        owner_id: workspace.ownerId,
+        editor_email: editorEmail,
+        profile: workspace.profile,
+        companies: workspace.companies,
+        experiences: workspace.experiences,
+        updated_at: workspace.updatedAt,
+      },
+      { onConflict: "owner_id" },
+    );
+
+    if (error) {
+      throw error;
+    }
+
+    return;
+  }
+
   const apiBaseUrl = getApiBaseUrl();
 
   if (apiBaseUrl) {

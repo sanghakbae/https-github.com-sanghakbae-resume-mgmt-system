@@ -13,6 +13,7 @@ import { CareerDashboard, ResumePreview } from "@/components/resume/resume-previ
 import { categoryOptions, defaultCompanyProfiles, defaultExperiences, defaultProfile, emptyCompanyForm, emptyExperienceForm } from "@/data/resume";
 import { useGoogleAuth } from "@/hooks/use-google-auth";
 import { useResumeWorkspace } from "@/hooks/use-resume-workspace";
+import { uploadResumeAsset } from "@/lib/supabase";
 import type {
   CompanyFormValues,
   CompanyProfile,
@@ -72,9 +73,12 @@ export default function App() {
   const [selectedOwnerId, setSelectedOwnerId] = useState<string | null>(null);
   const [isExportingPdf, setIsExportingPdf] = useState(false);
   const [isExportingHtml, setIsExportingHtml] = useState(false);
+  const [isUploadingProfilePhoto, setIsUploadingProfilePhoto] = useState(false);
+  const [isUploadingExperienceImage, setIsUploadingExperienceImage] = useState(false);
   const exportSectionRef = useRef<HTMLDivElement | null>(null);
   const activeOwnerId = isPublicResumeMode ? "public-resume" : isAdmin ? selectedOwnerId ?? user?.sub ?? "" : user?.sub ?? "";
   const effectiveIsEditMode = isPublicResumeMode ? isPublicEditor && isEditMode : isEditMode;
+  const canSaveWorkspace = !isPublicResumeMode || isPublicEditor;
   const {
     profile,
     setProfile,
@@ -95,6 +99,7 @@ export default function App() {
     defaultProfile,
     defaultCompanies: defaultCompanyProfiles,
     defaultExperiences,
+    canSave: canSaveWorkspace,
   });
   const [workspaceSummaries, setWorkspaceSummaries] = useState<WorkspaceSummary[]>([]);
 
@@ -258,6 +263,28 @@ export default function App() {
     resetWorkspace();
     resetCompanyForm();
     resetExperienceForm();
+  };
+
+  const uploadProfilePhoto = async (file: File) => {
+    setIsUploadingProfilePhoto(true);
+
+    try {
+      const publicUrl = await uploadResumeAsset(file, activeOwnerId, "profile");
+      setProfile((prev) => ({ ...prev, photo: publicUrl }));
+    } finally {
+      setIsUploadingProfilePhoto(false);
+    }
+  };
+
+  const uploadExperienceImage = async (file: File) => {
+    setIsUploadingExperienceImage(true);
+
+    try {
+      const publicUrl = await uploadResumeAsset(file, activeOwnerId, "experience");
+      setForm((prev) => ({ ...prev, image: publicUrl }));
+    } finally {
+      setIsUploadingExperienceImage(false);
+    }
   };
 
   const exportPdf = () => {
@@ -456,9 +483,13 @@ export default function App() {
                       샘플 복원
                     </Button>
                   ) : null}
-                  <Button className="w-full border border-slate-200 bg-white px-4 py-2 text-slate-700 md:w-auto" onClick={() => void saveNow()} disabled={isSaving}>
+                  <Button
+                    className={effectiveIsEditMode ? "w-full border border-sky-900 bg-sky-900 px-4 py-2 text-white md:w-auto" : "w-full border border-slate-200 bg-white px-4 py-2 text-slate-700 md:w-auto"}
+                    onClick={() => void saveNow()}
+                    disabled={isSaving}
+                  >
                     <Save className="mr-2 h-4 w-4" />
-                    {isSaving ? "저장 중" : "임시저장"}
+                    {isSaving ? "저장 중" : effectiveIsEditMode ? "저장" : "임시저장"}
                   </Button>
                 </>
               ) : null}
@@ -521,7 +552,13 @@ export default function App() {
                       </CardContent>
                     </Card>
                   ) : null}
-                  <ProfileForm profile={profile} onChange={setProfile} />
+                  <ProfileForm
+                    ownerId={activeOwnerId}
+                    profile={profile}
+                    isUploading={isUploadingProfilePhoto}
+                    onChange={setProfile}
+                    onUploadPhoto={uploadProfilePhoto}
+                  />
                   <CompanyForm
                     form={companyForm}
                     errors={companyErrors}
@@ -534,13 +571,16 @@ export default function App() {
                     onCancel={resetCompanyForm}
                   />
                   <ExperienceForm
+                    ownerId={activeOwnerId}
                     form={form}
                     errors={formErrors}
                     editingId={editingId}
                     organizations={companies.map((company) => company.organization)}
+                    isUploading={isUploadingExperienceImage}
                     onChange={setForm}
                     onSubmit={submitExperience}
                     onCancel={resetExperienceForm}
+                    onUploadImage={uploadExperienceImage}
                   />
                 </div>
               )}
