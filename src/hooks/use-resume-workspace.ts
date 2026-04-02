@@ -134,6 +134,29 @@ export function useResumeWorkspace({ ownerId, defaultProfile, defaultCompanies, 
     }
   }, [canSave, companies, experiences, ownerId, profile]);
 
+  const replaceWorkspace = useCallback(
+    async (workspace: ResumeWorkspace) => {
+      if (!ownerId || !canSave) return;
+
+      setProfile(workspace.profile);
+      setCompanies(workspace.companies);
+      setExperiences(workspace.experiences);
+      setUpdatedAt(workspace.updatedAt);
+      setIsSaving(true);
+
+      try {
+        await saveWorkspace(workspace);
+        setError(null);
+        setShowSavedNotice(true);
+      } catch {
+        setError("이력서 데이터를 저장하지 못했습니다.");
+      } finally {
+        setIsSaving(false);
+      }
+    },
+    [canSave, ownerId],
+  );
+
   return {
     profile,
     setProfile,
@@ -150,5 +173,6 @@ export function useResumeWorkspace({ ownerId, defaultProfile, defaultCompanies, 
     resetWorkspace,
     listWorkspaces,
     saveNow,
+    replaceWorkspace,
   };
 }

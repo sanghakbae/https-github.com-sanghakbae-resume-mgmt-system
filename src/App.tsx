@@ -1,5 +1,5 @@
-import { useEffect, useMemo, useRef, useState } from "react";
-import { Download, Eye, LogOut, Pencil, RotateCcw, Save, ShieldCheck } from "lucide-react";
+import { ChangeEvent, useEffect, useMemo, useRef, useState } from "react";
+import { Download, Eye, FileUp, LogOut, Pencil, RotateCcw, Save, ShieldCheck } from "lucide-react";
 import html2canvas from "html2canvas";
 import jsPDF from "jspdf";
 import { LoginPage } from "@/components/auth/login-page";
@@ -22,6 +22,7 @@ import type {
   ExperienceItem,
   ExperienceValidationErrors,
   ResumeCategory,
+  ResumeWorkspace,
   WorkspaceSummary,
 } from "@/types/resume";
 
@@ -75,6 +76,7 @@ export default function App() {
   const [isUploadingProfilePhoto, setIsUploadingProfilePhoto] = useState(false);
   const [isUploadingExperienceImage, setIsUploadingExperienceImage] = useState(false);
   const [assetUploadError, setAssetUploadError] = useState<string | null>(null);
+  const importWorkspaceInputRef = useRef<HTMLInputElement | null>(null);
   const exportSectionRef = useRef<HTMLDivElement | null>(null);
   const activeOwnerId = isPublicResumeMode ? "public-resume" : isAdmin ? selectedOwnerId ?? user?.sub ?? "" : user?.sub ?? "";
   const effectiveIsEditMode = isPublicResumeMode ? isPublicEditor && isEditMode : isEditMode;
@@ -95,6 +97,7 @@ export default function App() {
     resetWorkspace,
     listWorkspaces,
     saveNow,
+    replaceWorkspace,
   } = useResumeWorkspace({
     ownerId: activeOwnerId,
     defaultProfile,
@@ -103,6 +106,7 @@ export default function App() {
     canSave: canSaveWorkspace,
   });
   const [workspaceSummaries, setWorkspaceSummaries] = useState<WorkspaceSummary[]>([]);
+  const headerButtonClass = "min-h-7 px-2.5 py-0.5 text-[11px] leading-4 md:text-[11px]";
 
   useEffect(() => {
     if (isPublicResumeMode) return;
@@ -323,6 +327,73 @@ export default function App() {
     }
   };
 
+  const buildWorkspaceSnapshot = (): ResumeWorkspace => ({
+    ownerId: activeOwnerId,
+    editorEmail: null,
+    profile,
+    companies,
+    experiences,
+    updatedAt: new Date().toISOString(),
+  });
+
+  const exportWorkspaceJson = () => {
+    const snapshot = buildWorkspaceSnapshot();
+    const blob = new Blob([JSON.stringify(snapshot, null, 2)], { type: "application/json" });
+    const downloadUrl = URL.createObjectURL(blob);
+    const link = document.createElement("a");
+    const safeName = (profile.name || "resume").replace(/\s+/g, "-").toLowerCase();
+
+    link.href = downloadUrl;
+    link.download = `${safeName}-workspace.json`;
+    document.body.appendChild(link);
+    link.click();
+    link.remove();
+    URL.revokeObjectURL(downloadUrl);
+  };
+
+  const isValidImportedWorkspace = (value: unknown): value is Partial<ResumeWorkspace> & Pick<ResumeWorkspace, "profile" | "companies" | "experiences"> => {
+    if (!value || typeof value !== "object") return false;
+
+    const candidate = value as Record<string, unknown>;
+
+    return Boolean(
+      candidate.profile &&
+        typeof candidate.profile === "object" &&
+        Array.isArray(candidate.companies) &&
+        Array.isArray(candidate.experiences),
+    );
+  };
+
+  const importWorkspaceJson = async (event: ChangeEvent<HTMLInputElement>) => {
+    const file = event.target.files?.[0];
+    event.target.value = "";
+
+    if (!file) return;
+
+    try {
+      const parsed = JSON.parse(await file.text()) as unknown;
+
+      if (!isValidImportedWorkspace(parsed)) {
+        throw new Error("invalid-workspace");
+      }
+
+      await replaceWorkspace({
+        ownerId: activeOwnerId,
+        editorEmail: parsed.editorEmail ?? null,
+        profile: parsed.profile,
+        companies: parsed.companies,
+        experiences: parsed.experiences,
+        updatedAt: new Date().toISOString(),
+      });
+
+      resetCompanyForm();
+      resetExperienceForm();
+      setAssetUploadError(null);
+    } catch {
+      setAssetUploadError("작업공간 JSON을 불러오지 못했습니다. 형식을 확인하세요.");
+    }
+  };
+
   const exportPdf = () => {
     const exportNode = exportSectionRef.current;
     if (!exportNode || isExportingPdf) return;
@@ -381,6 +452,7 @@ export default function App() {
 
   return (
     <div className="resume-app h-screen overflow-hidden bg-slate-100 px-3 py-4 sm:px-4 md:px-6 md:py-6">
+      <input ref={importWorkspaceInputRef} type="file" accept="application/json" className="hidden" onChange={importWorkspaceJson} />
       {showSavedNotice ? (
         <div className="pointer-events-none fixed inset-0 z-50 flex items-center justify-center px-4 screen-only">
           <div className="rounded-[16px] border border-emerald-200 bg-white/95 px-6 py-4 text-center shadow-[0_24px_80px_rgba(15,23,42,0.18)] backdrop-blur">
@@ -461,27 +533,38 @@ export default function App() {
               {!isPublicResumeMode || isPublicEditor ? (
                 <>
                   <Button
-                    className={isEditMode ? "w-full border border-slate-900 bg-slate-900 px-4 py-2 text-white md:w-auto" : "w-full border border-slate-200 bg-white px-4 py-2 text-slate-700 md:w-auto"}
+                    className={`${headerButtonClass} ${isEditMode ? "w-full border border-slate-900 bg-slate-900 text-white md:w-auto" : "w-full border border-slate-200 bg-white text-slate-700 md:w-auto"}`}
                     onClick={() => setIsEditMode(true)}
                   >
                     <Pencil className="mr-2 h-4 w-4" />
                     편집 모드
                   </Button>
                   <Button
-                    className={!isEditMode ? "w-full border border-slate-900 bg-slate-900 px-4 py-2 text-white md:w-auto" : "w-full border border-slate-200 bg-white px-4 py-2 text-slate-700 md:w-auto"}
+                    className={`${headerButtonClass} ${!isEditMode ? "w-full border border-slate-900 bg-slate-900 text-white md:w-auto" : "w-full border border-slate-200 bg-white text-slate-700 md:w-auto"}`}
                     onClick={() => setIsEditMode(false)}
                   >
                     <Eye className="mr-2 h-4 w-4" />
                     공개 보기
                   </Button>
                   {!isPublicResumeMode ? (
-                    <Button className="w-full border border-slate-200 bg-white px-4 py-2 text-slate-700 md:w-auto" onClick={restoreSampleData}>
+                    <Button className={`${headerButtonClass} w-full border border-slate-200 bg-white text-slate-700 md:w-auto`} onClick={restoreSampleData}>
                       <RotateCcw className="mr-2 h-4 w-4" />
                       샘플 복원
                     </Button>
                   ) : null}
+                  <Button className={`${headerButtonClass} w-full border border-slate-200 bg-white text-slate-700 md:w-auto`} onClick={exportWorkspaceJson}>
+                    <Download className="mr-2 h-4 w-4" />
+                    JSON 내보내기
+                  </Button>
                   <Button
-                    className={effectiveIsEditMode ? "w-full border border-sky-900 bg-sky-900 px-4 py-2 text-white md:w-auto" : "w-full border border-slate-200 bg-white px-4 py-2 text-slate-700 md:w-auto"}
+                    className={`${headerButtonClass} w-full border border-slate-200 bg-white text-slate-700 md:w-auto`}
+                    onClick={() => importWorkspaceInputRef.current?.click()}
+                  >
+                    <FileUp className="mr-2 h-4 w-4" />
+                    JSON 가져오기
+                  </Button>
+                  <Button
+                    className={`${headerButtonClass} ${effectiveIsEditMode ? "w-full border border-sky-900 bg-sky-900 text-white md:w-auto" : "w-full border border-slate-200 bg-white text-slate-700 md:w-auto"}`}
                     onClick={() => void saveNow()}
                     disabled={isSaving}
                   >
@@ -490,12 +573,12 @@ export default function App() {
                   </Button>
                 </>
               ) : null}
-              <Button className="w-full border border-slate-200 bg-white px-4 py-2 text-slate-700 md:w-auto" onClick={exportPdf} disabled={isExportingPdf}>
+              <Button className={`${headerButtonClass} w-full border border-slate-200 bg-white text-slate-700 md:w-auto`} onClick={exportPdf} disabled={isExportingPdf}>
                 <Download className="mr-2 h-4 w-4" />
                 {isExportingPdf ? "PDF 생성 중" : "PDF 저장"}
               </Button>
               {!isPublicResumeMode || user ? (
-                <Button className="w-full border border-slate-200 bg-white px-4 py-2 text-slate-700 md:w-auto" onClick={signOut}>
+                <Button className={`${headerButtonClass} w-full border border-slate-200 bg-white text-slate-700 md:w-auto`} onClick={signOut}>
                   <LogOut className="mr-2 h-4 w-4" />
                   {isPublicResumeMode ? "편집 로그아웃" : "로그아웃"}
                 </Button>

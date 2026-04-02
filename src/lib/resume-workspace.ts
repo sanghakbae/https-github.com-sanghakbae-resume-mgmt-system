@@ -42,6 +42,11 @@ function mergeExperiences(existing: ExperienceItem[], defaults: ExperienceItem[]
   return [...existing, ...defaults.filter((item) => !seen.has(`${item.organization}::${item.title}::${item.period}`))];
 }
 
+function restoreProtectedDefaultExperiences(existing: ExperienceItem[], defaults: ExperienceItem[]) {
+  const protectedDefaults = defaults.filter((item) => item.title === "ITGC 통제 관리시스템 개발 및 운영");
+  return mergeExperiences(existing, protectedDefaults);
+}
+
 function ensureUniqueExperienceIds(items: ExperienceItem[]) {
   const seen = new Set<number>();
   let nextId = items.reduce((max, item) => Math.max(max, item.id), 0) + 1;
@@ -94,6 +99,7 @@ function mergeWorkspaceWithDefaults(
     position: normalizeCompanyPosition(company.position),
   }));
   const normalizedExperiences = (workspace.experiences ?? []).map(normalizeExperienceCategory);
+  const migratedExperiences = restoreProtectedDefaultExperiences(normalizedExperiences, defaultExperiences).map(normalizeExperienceCategory);
 
   return {
     ...workspace,
@@ -106,7 +112,7 @@ function mergeWorkspaceWithDefaults(
         : mergeCompanyProfiles([], defaultCompanies),
     experiences:
       normalizedExperiences.length > 0
-        ? ensureUniqueExperienceIds(normalizedExperiences)
+        ? ensureUniqueExperienceIds(migratedExperiences)
         : ensureUniqueExperienceIds(defaultExperiences.map(normalizeExperienceCategory)),
   };
 }

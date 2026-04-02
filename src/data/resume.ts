@@ -193,6 +193,16 @@ export const defaultExperiences: ExperienceItem[] = [
   },
   {
     id: 1003,
+    title: "ITGC 통제 관리시스템 개발 및 운영",
+    organization: "(주)무하유",
+    period: "2024.06 - 현재",
+    category: "개발/자동화",
+    description:
+      "사내 정보보호 관리체계 운영 효율화를 위해 ITGC 통제 관리시스템을 설계하고 등록 프로세스를 정비했습니다. 통제 항목 관리, 점검 이력 추적, 증적 관리, 운영 현황 가시화를 중심으로 실무 운영 체계를 구축했습니다.",
+    highlight: ["ITGC", "통제 관리", "개발", "증적 관리", "운영 자동화"],
+  },
+  {
+    id: 1004,
     title: "정보보호 관리체계 운영 및 CSAP·ISO 인증 대응",
     organization: "알체라(Alchera Inc.)",
     period: "2023.06 - 2024.04",
@@ -202,7 +212,7 @@ export const defaultExperiences: ExperienceItem[] = [
     highlight: ["정보보호 관리체계", "CSAP", "ISO 27001", "ISO 27017", "보안 운영"],
   },
   {
-    id: 1004,
+    id: 1005,
     title: "업무용 소프트웨어 보안 및 비용 관리 체계 운영",
     organization: "알체라(Alchera Inc.)",
     period: "2023.06 - 2024.04",
@@ -212,7 +222,7 @@ export const defaultExperiences: ExperienceItem[] = [
     highlight: ["Google Workspace", "GitHub", "Atlassian", "2FA", "IP ACL"],
   },
   {
-    id: 1005,
+    id: 1006,
     title: "롯데면세점 ISMS-P 인증(사후) 컨설팅 PM",
     organization: "삼정회계법인(KPMG)",
     period: "2023.03 - 2023.05",
@@ -222,7 +232,7 @@ export const defaultExperiences: ExperienceItem[] = [
     highlight: ["ISMS-P", "PM", "위험분석", "법적 준거성", "Gap 분석"],
   },
   {
-    id: 1006,
+    id: 1007,
     title: "메디트 ISO 27001 갱신 및 글로벌 컴플라이언스 검토 PM",
     organization: "삼정회계법인(KPMG)",
     period: "2023.01 - 2023.03",
@@ -232,7 +242,7 @@ export const defaultExperiences: ExperienceItem[] = [
     highlight: ["ISO 27001", "GDPR", "HIPPA", "하드닝 리뷰", "컴플라이언스"],
   },
   {
-    id: 1007,
+    id: 1008,
     title: "CJ 푸드빌 ISMS-P 최초 인증 컨설팅 PM",
     organization: "삼정회계법인(KPMG)",
     period: "2022.10 - 2022.12",
@@ -242,7 +252,7 @@ export const defaultExperiences: ExperienceItem[] = [
     highlight: ["ISMS-P", "초기 인증", "웹 모의해킹", "하드닝", "PM"],
   },
   {
-    id: 1008,
+    id: 1009,
     title: "롯데 마트·슈퍼 ISMS 사후 인증 컨설팅 PM",
     organization: "삼정회계법인(KPMG)",
     period: "2022.04 - 2022.08",
@@ -252,7 +262,7 @@ export const defaultExperiences: ExperienceItem[] = [
     highlight: ["ISMS", "사후 인증", "위험평가", "인증심사", "PM"],
   },
   {
-    id: 1009,
+    id: 1010,
     title: "발전소 OT 보안 마스터플랜 및 아키텍처 설계",
     organization: "삼정회계법인(KPMG)",
     period: "2021.08 - 2021.12",
@@ -262,7 +272,7 @@ export const defaultExperiences: ExperienceItem[] = [
     highlight: ["OT 보안", "Nozomi Guardian", "망분리", "Purdue 모델", "마스터플랜"],
   },
   {
-    id: 1010,
+    id: 1011,
     title: "LS산전 OT 보안체계 수립 컨설팅 PM",
     organization: "삼정회계법인(KPMG)",
     period: "2020.11 - 2021.02",
@@ -272,7 +282,7 @@ export const defaultExperiences: ExperienceItem[] = [
     highlight: ["LS산전", "OT 보안", "Nozomi Guardian", "OA/FA", "PM"],
   },
   {
-    id: 1011,
+    id: 1012,
     title: "SK실트론 OT 보안 마스터플랜 수립 PM",
     organization: "삼정회계법인(KPMG)",
     period: "2020.08 - 2020.09",
@@ -282,7 +292,7 @@ export const defaultExperiences: ExperienceItem[] = [
     highlight: ["SK실트론", "OT 보안", "망분리", "마스터플랜", "PM"],
   },
   {
-    id: 1012,
+    id: 1013,
     title: "위메프 보안기술팀 운영 및 보안성 검토 체계 수립",
     organization: "위메프",
     period: "2019.05 - 2019.12",
@@ -292,7 +302,7 @@ export const defaultExperiences: ExperienceItem[] = [
     highlight: ["보안성 검토", "DB 접근제어", "소스코드 진단", "보안관제", "팀장"],
   },
   {
-    id: 1013,
+    id: 1014,
     title: "평창동계올림픽 EMS 구축 및 OT 보안 솔루션 프리세일즈",
     organization: "대정에이앤지(주)",
     period: "2017.10 - 2018.03",
@@ -302,7 +312,7 @@ export const defaultExperiences: ExperienceItem[] = [
     highlight: ["OT 솔루션", "EMS", "PLC", "Modbus", "프리세일즈"],
   },
   {
-    id: 1014,
+    id: 1015,
     title: "한국수자원공사 천안정수장 OT 보안솔루션 구축 및 운영",
     organization: "대정에이앤지(주)",
     period: "2017.01 - 2017.12",
@@ -312,7 +322,7 @@ export const defaultExperiences: ExperienceItem[] = [
     highlight: ["SCADA", "기반시설", "OT 보안솔루션", "Multi Homed Network", "운영"],
   },
   {
-    id: 1015,
+    id: 1016,
     title: "금융·항공·공공 분야 모의해킹 및 개인정보보호 컨설팅",
     organization: "삼정회계법인(KPMG)",
     period: "2014.07 - 2016.09",
@@ -322,7 +332,7 @@ export const defaultExperiences: ExperienceItem[] = [
     highlight: ["PCI-DSS", "개인정보보호", "웹 모의해킹", "PL", "PM"],
   },
   {
-    id: 1016,
+    id: 1017,
     title: "CJ 그룹 웹 모의해킹 및 보안시스템 운영",
     organization: "씨제이올리브네트웍스(주)",
     period: "2013.09 - 2014.06",
@@ -332,7 +342,7 @@ export const defaultExperiences: ExperienceItem[] = [
     highlight: ["FireEye", "침해사고 분석", "ESM", "웹 모의해킹", "하드닝"],
   },
   {
-    id: 1017,
+    id: 1018,
     title: "침해사고 대응 및 대학·언론사 모의해킹",
     organization: "주식회사 윈스",
     period: "2012.06 - 2013.09",
@@ -342,7 +352,7 @@ export const defaultExperiences: ExperienceItem[] = [
     highlight: ["침해사고 대응", "한양대학교", "언론사", "SQLMAP", "WAF 우회"],
   },
   {
-    id: 1018,
+    id: 1019,
     title: "국가 기반시설 취약점 분석 및 평가",
     organization: "한전케이디엔(주)",
     period: "2010.07 - 2012.06",
@@ -352,7 +362,7 @@ export const defaultExperiences: ExperienceItem[] = [
     highlight: ["기반시설", "취약점 분석", "방화벽 정책", "망분리", "에너지"],
   },
   {
-    id: 1019,
+    id: 1020,
     title: "SKT 인프라 보안 취약점 진단 및 웹 모의해킹",
     organization: "엔코딩패스 주식회사",
     period: "2008.07 - 2010.07",
@@ -362,7 +372,7 @@ export const defaultExperiences: ExperienceItem[] = [
     highlight: ["SKT", "WEB/WAS", "DBMS", "자동화 스크립트", "SQL Injection"],
   },
   {
-    id: 1020,
+    id: 1021,
     title: "웹방화벽 시그니처 룰 개발 및 웹 취약점 연구",
     organization: "(주)모니터랩",
     period: "2007.01 - 2008.07",
