@@ -26,6 +26,7 @@ npm run dev
 
 ```env
 VITE_GOOGLE_CLIENT_ID=your-google-oauth-client-id.apps.googleusercontent.com
+VITE_ENABLE_SUPABASE=false
 VITE_EDITOR_EMAILS=your-google-email@example.com
 VITE_PUBLIC_RESUME_MODE=false
 ```
@@ -39,6 +40,9 @@ VITE_PUBLIC_RESUME_MODE=false
   - 로컬 편집 모드
 - `VITE_EDITOR_EMAILS`
   - 공개 배포본에서 편집 권한을 열 수 있는 Google 계정 이메일 목록
+- `VITE_ENABLE_SUPABASE`
+  - `true`일 때만 Supabase 저장소를 사용
+  - 로컬 개발에서는 `false`로 두면 브라우저 `localStorage` 작업공간을 사용
 
 ## 공개 배포 모드
 

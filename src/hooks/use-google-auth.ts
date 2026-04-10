@@ -122,6 +122,8 @@ export function useGoogleAuth() {
 
   const signIn = async (response: GoogleCredentialResponse) => {
     try {
+      const nextUser = parseGoogleCredential(response.credential);
+
       if (isSupabaseConfigured && supabase) {
         const { error: signInError } = await supabase.auth.signInWithIdToken({
           provider: "google",
@@ -129,11 +131,11 @@ export function useGoogleAuth() {
         });
 
         if (signInError) {
-          throw signInError;
+          // Keep local login available for development even if Supabase auth is not fully configured.
+          console.warn("Supabase Google sign-in failed; continuing with local session.", signInError);
         }
       }
 
-      const nextUser = parseGoogleCredential(response.credential);
       window.localStorage.setItem(SESSION_STORAGE_KEY, JSON.stringify(nextUser));
       setUser(nextUser);
       setError(null);

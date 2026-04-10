@@ -14,6 +14,8 @@ type ExperienceFormProps = {
   editingId: number | null;
   organizations?: string[];
   isUploading?: boolean;
+  isAutoTagging?: boolean;
+  reviewError?: string | null;
   onChange: Dispatch<SetStateAction<ExperienceFormValues>>;
   onSubmit: () => void;
   onCancel: () => void;
@@ -27,6 +29,8 @@ export function ExperienceForm({
   editingId,
   organizations = [],
   isUploading = false,
+  isAutoTagging = false,
+  reviewError = null,
   onChange,
   onSubmit,
   onCancel,
@@ -68,9 +72,13 @@ export function ExperienceForm({
           </div>
           <div>
             <h2 className="text-base font-semibold leading-6">{editingId === null ? "수행 업무 추가" : "수행 업무 수정"}</h2>
-            <p className="text-[13px] leading-5 text-slate-500">카테고리에 따라 공개 이력서 섹션으로 자동 분류됩니다.</p>
+            <p className="text-[13px] leading-5 text-slate-500">저장 시 Gemini가 설명을 보고 핵심 키워드를 자동 보강합니다.</p>
           </div>
         </div>
+
+        {reviewError ? (
+          <div className="rounded-[10px] border border-rose-200 bg-rose-50 px-3 py-2 text-[13px] leading-5 text-rose-700">{reviewError}</div>
+        ) : null}
 
         <FormField label="업무명 / 프로젝트명" error={errors.title}>
           <Input value={form.title} onChange={(e) => updateField("title", e.target.value)} />
@@ -147,9 +155,9 @@ export function ExperienceForm({
         </FormField>
 
         <div className="flex flex-col gap-2 sm:flex-row">
-          <Button className="flex w-full flex-1 items-center justify-center bg-slate-900 px-4 py-2 text-white" onClick={onSubmit}>
+          <Button className="flex w-full flex-1 items-center justify-center bg-slate-900 px-4 py-2 text-white" onClick={onSubmit} disabled={isAutoTagging}>
             {editingId === null ? <Plus className="mr-2 h-4 w-4" /> : <Save className="mr-2 h-4 w-4" />}
-            {editingId === null ? "수행 업무 추가" : "수정 내용 저장"}
+            {isAutoTagging ? "Gemini 검토 중" : editingId === null ? "수행 업무 추가" : "수정 내용 저장"}
           </Button>
           {editingId !== null ? (
             <Button className="w-full border border-slate-200 bg-white px-4 py-2 text-slate-700 sm:w-auto" onClick={onCancel}>

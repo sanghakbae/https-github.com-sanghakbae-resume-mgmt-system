@@ -1,4 +1,4 @@
-import { Award, BarChart3, BriefcaseBusiness, CalendarRange, ShieldCheck, Sparkles, Target, TrendingUp } from "lucide-react";
+import { Award, BarChart3, BriefcaseBusiness, ShieldCheck, Sparkles, Target, TrendingUp } from "lucide-react";
 import { Card, CardContent } from "@/components/ui/card";
 import { categoryMeta, categoryOptions, profileHeaderIcon, profileInfoItems } from "@/data/resume";
 import type { CompanyProfile, ExperienceItem, Profile } from "@/types/resume";
@@ -32,7 +32,7 @@ export function ResumePreview({
           <div className="flex flex-col gap-4 sm:flex-row sm:items-start">
             <div className="flex h-24 w-24 shrink-0 items-center justify-center overflow-hidden rounded-[18px] border border-slate-200 bg-slate-100">
               {profile.photo ? (
-                <img src={profile.photo} alt={`${profile.name} 프로필 사진`} className="h-full w-full object-cover object-top" />
+                <img src={profile.photo} alt={`${profile.name} 프로필 사진`} className="h-full w-full object-cover [object-position:center_20%]" />
               ) : (
                 <div className="flex h-10 w-10 items-center justify-center rounded-[10px] bg-slate-900 text-white">
                   <HeaderIcon className="h-5 w-5" />
@@ -173,7 +173,6 @@ export function CareerDashboard({
       count: items.filter((item) => item.category === category).length,
     }))
     .sort((left, right) => right.count - left.count)[0];
-  const recentProject = [...items].sort((left, right) => getPeriodScore(right.period) - getPeriodScore(left.period))[0];
   const keywordCounts = new Map<string, number>();
 
   for (const item of items) {
@@ -184,11 +183,7 @@ export function CareerDashboard({
     }
   }
 
-  const topKeywords = [...keywordCounts.entries()]
-    .sort((left, right) => right[1] - left[1])
-    .slice(0, 6);
-  const totalImages = items.filter((item) => item.image).length;
-  const organizations = new Set(items.map((item) => item.organization)).size;
+  const topKeywords = [...keywordCounts.entries()].sort((left, right) => right[1] - left[1]);
   const specialties = profile.specialty
     .split("/")
     .map((value) => value.trim())
@@ -215,40 +210,12 @@ export function CareerDashboard({
       return getPeriodScore(right.period) - getPeriodScore(left.period);
     })
     .slice(0, 4);
+  const tagDistribution = [...keywordCounts.entries()].sort((left, right) => right[1] - left[1]);
   const complianceCoverage = collectCoverageKeywords(items, profile);
-  const categoryBucketMap: Partial<Record<ResumeCategory, ResumeCategory[]>> = {
-    "보안 컨설팅": ["보안 컨설팅", "인증"],
-    "인증": ["보안 컨설팅", "인증"],
-  };
-  const categoryStats = categoryOptions.map((category) => {
-    const bucketCategories = categoryBucketMap[category] ?? [category];
-    const categoryItems = items.filter((item) => bucketCategories.includes(item.category));
-    const count = categoryItems.length;
-    const ratio = totalProjects > 0 ? Math.round((count / totalProjects) * 100) : 0;
-    const tagCounts = new Map<string, number>();
-
-    for (const item of categoryItems) {
-      for (const tag of item.highlight) {
-        tagCounts.set(tag, (tagCounts.get(tag) ?? 0) + 1);
-      }
-    }
-
-    const topTags = [...tagCounts.entries()]
-      .sort((left, right) => right[1] - left[1])
-      .slice(0, 2)
-      .map(([tag]) => tag);
-
-    return {
-      category,
-      count,
-      ratio,
-      topTags,
-    };
-  });
 
   return (
-    <section className="overflow-hidden rounded-[20px] border border-slate-200 bg-[linear-gradient(140deg,#0f172a_0%,#1e293b_38%,#e2e8f0_38%,#f8fafc_100%)] p-[1px]">
-      <div className="rounded-[19px] bg-[linear-gradient(145deg,rgba(255,255,255,0.95)_0%,rgba(248,250,252,0.96)_100%)] p-4 sm:p-5">
+    <section className="overflow-hidden rounded-[20px] border-2 border-black bg-white">
+      <div className="rounded-[16px] bg-[linear-gradient(180deg,#ffffff_0%,#f8fafc_100%)] p-4 sm:p-5">
         <div className="flex flex-col gap-2 border-b border-slate-200 pb-4">
           <div className="flex items-center gap-3">
             <div className="flex h-10 w-10 items-center justify-center rounded-[12px] bg-slate-950 text-white shadow-[0_10px_30px_rgba(15,23,42,0.18)]">
@@ -297,44 +264,96 @@ export function CareerDashboard({
           </div>
         </div>
 
-        <div className="mt-4 grid gap-3 md:grid-cols-2 xl:grid-cols-5">
+        <div className="mt-4 grid gap-3 md:grid-cols-2 xl:grid-cols-4">
           <DashboardStat icon={BriefcaseBusiness} label="총 프로젝트" value={`${totalProjects}건`} />
-          <DashboardStat icon={Sparkles} label="활성 카테고리" value={`${activeCategories}개`} />
+          <DashboardStat icon={Sparkles} label="활성 분야" value={`${activeCategories}개`} />
           <DashboardStat icon={BarChart3} label="가장 많은 분야" value={topCategory ? categoryMeta[topCategory.category].label : "-"} />
-          <DashboardStat icon={Sparkles} label="근무 조직" value={`${organizations}곳`} />
-          <DashboardStat icon={CalendarRange} label="최근 프로젝트" value={recentProject?.period ?? "-"} />
+          <DashboardStat icon={Sparkles} label="주요 태그" value={`${topKeywords.length}개`} />
         </div>
 
         <div className="mt-5 grid gap-4 xl:grid-cols-[0.58fr_1.42fr]">
-          <div className="rounded-[16px] border border-slate-200 bg-white/90 p-3 shadow-[0_10px_30px_rgba(148,163,184,0.12)]">
-            <p className="text-sm font-semibold text-slate-900">카테고리 분포</p>
-            <div className="mt-3 space-y-2">
-              {categoryStats.map(({ category, count, ratio, topTags }) => {
-                const width = totalProjects > 0 ? Math.max((count / totalProjects) * 100, count > 0 ? 10 : 0) : 0;
+          <div className="p-1">
+            <p className="text-sm font-semibold text-slate-900">핵심 역량 분포</p>
+            <div className="resume-tag-cloud mt-4">
+              {tagDistribution.length ? (
+                <>
+                  {tagDistribution.slice(0, 1).map(([tag, count]) => {
+                    const strongestCount = Math.max(tagDistribution[0]?.[1] ?? 1, 1);
+                    const emphasis = count / strongestCount;
+                    const cloudPosition = getTagCloudPosition(0, tagDistribution.length);
+                    const fontSize = 14 + Math.round(emphasis * 16);
 
-                return (
-                  <div key={category} className="rounded-[12px] border border-slate-200 bg-slate-50/80 px-2.5 py-2">
-                    <div className="flex items-center justify-between gap-3 text-[13px] leading-5">
-                      <span className="font-medium text-slate-700">{categoryMeta[category].label}</span>
-                      <span className="text-slate-500">
-                        {count}건 · {ratio}%
+                    return (
+                      <span
+                        key={tag}
+                        className="resume-tag-cloud__item resume-tag-cloud__item--center"
+                        style={{
+                          left: `${cloudPosition.x}%`,
+                          top: `${cloudPosition.y}%`,
+                          fontSize: `${fontSize}px`,
+                          zIndex: 20,
+                        }}
+                      >
+                        <span
+                          className="resume-tag-cloud__text"
+                          style={{
+                            color: "#0f172a",
+                            opacity: 0.95,
+                            textShadow: "0 8px 18px rgba(255,255,255,0.78)",
+                          }}
+                        >
+                          <span className="font-semibold">{tag}</span>
+                        </span>
                       </span>
-                    </div>
-                    <div className="mt-2 h-1.5 overflow-hidden rounded-full bg-slate-200">
-                      <div className="h-full rounded-full bg-[linear-gradient(90deg,#0f172a_0%,#334155_100%)]" style={{ width: `${width}%` }} />
-                    </div>
-                    {topTags.length ? (
-                      <div className="mt-2 flex flex-wrap gap-1.5">
-                        {topTags.map((tag) => (
-                          <span key={`${category}-${tag}`} className="rounded-full border border-slate-200 bg-white px-2 py-0.5 text-[11px] leading-4 text-slate-600">
-                            {tag}
+                    );
+                  })}
+                  <div className="resume-tag-cloud__orbit-layer">
+                    {tagDistribution.slice(1).map(([tag, count], index) => {
+                      const strongestCount = Math.max(tagDistribution[0]?.[1] ?? 1, 1);
+                      const emphasis = count / strongestCount;
+                      const cloudPosition = getTagCloudPosition(index + 1, tagDistribution.length);
+                      const fontSize = 14 + Math.round(emphasis * 16);
+                      const palette = [
+                        "#0f766e",
+                        "#1d4ed8",
+                        "#7c3aed",
+                        "#be123c",
+                        "#b45309",
+                        "#166534",
+                        "#334155",
+                      ];
+
+                      return (
+                        <span
+                          key={tag}
+                          className="resume-tag-cloud__item resume-tag-cloud__item--orbit"
+                          style={{
+                            left: `${cloudPosition.x}%`,
+                            top: `${cloudPosition.y}%`,
+                            fontSize: `${fontSize}px`,
+                            zIndex: 10 + index,
+                            ["--tag-rotate" as string]: `${cloudPosition.rotate}deg`,
+                          }}
+                        >
+                          <span
+                            className="resume-tag-cloud__text"
+                            style={{
+                              transform: `rotate(${cloudPosition.rotate}deg)`,
+                              color: palette[index % palette.length],
+                              opacity: 0.58 + emphasis * 0.42,
+                              textShadow: "0 8px 18px rgba(255,255,255,0.78)",
+                            }}
+                          >
+                            <span className={index < 2 ? "font-semibold" : "font-medium"}>{tag}</span>
                           </span>
-                        ))}
-                      </div>
-                    ) : null}
+                        </span>
+                      );
+                    })}
                   </div>
-                );
-              })}
+                </>
+              ) : (
+                <p className="text-[13px] leading-5 text-slate-500">프로젝트를 등록하면 Gemini 태그 기준으로 역량 분포가 표시됩니다.</p>
+              )}
             </div>
           </div>
 
@@ -367,36 +386,6 @@ export function CareerDashboard({
                   ))}
                 </div>
               </AccentPanel>
-            </div>
-
-            <div className="rounded-[16px] border border-slate-200 bg-white/90 p-4 shadow-[0_10px_30px_rgba(148,163,184,0.12)]">
-              <p className="text-sm font-semibold text-slate-900">핵심 키워드</p>
-              <div className="mt-3 flex flex-wrap gap-2">
-                {topKeywords.length ? (
-                  topKeywords.map(([keyword, count]) => (
-                    <span key={keyword} className="rounded-full border border-slate-200 bg-slate-50 px-2.5 py-1 text-[12px] leading-4 text-slate-700">
-                      {keyword} {count}
-                    </span>
-                  ))
-                ) : (
-                  <p className="text-[13px] leading-5 text-slate-500">아직 키워드가 없습니다.</p>
-                )}
-              </div>
-            </div>
-
-            <div className="rounded-[16px] border border-slate-200 bg-white/90 p-4 shadow-[0_10px_30px_rgba(148,163,184,0.12)]">
-              <p className="text-sm font-semibold text-slate-900">최근 이력</p>
-              {recentProject ? (
-                <div className="mt-3 space-y-1.5">
-                  <p className="text-[13px] font-medium leading-5 text-slate-900">{recentProject.title}</p>
-                  <p className="text-[12px] leading-4 text-slate-500">
-                    {recentProject.organization} · {recentProject.period}
-                  </p>
-                  <p className="whitespace-pre-wrap text-[13px] leading-5 text-slate-600">{recentProject.description}</p>
-                </div>
-              ) : (
-                <p className="mt-3 text-[13px] leading-5 text-slate-500">최근 이력이 없습니다.</p>
-              )}
             </div>
           </div>
         </div>
@@ -474,6 +463,38 @@ function normalizeHighlightKeyword(keyword: string) {
   if (lower.includes("개인정보")) return "개인정보보호";
 
   return trimmed;
+}
+
+function getTagCloudPosition(index: number, total: number) {
+  const presets = [
+    { x: 50, y: 50, rotate: 0 },
+    { x: 50, y: 32, rotate: -6 },
+    { x: 36, y: 38, rotate: 8 },
+    { x: 64, y: 38, rotate: -4 },
+    { x: 33, y: 56, rotate: -8 },
+    { x: 67, y: 56, rotate: 7 },
+    { x: 50, y: 68, rotate: -5 },
+    { x: 22, y: 26, rotate: 4 },
+    { x: 78, y: 26, rotate: -3 },
+    { x: 18, y: 46, rotate: 6 },
+    { x: 82, y: 46, rotate: -7 },
+    { x: 24, y: 74, rotate: 4 },
+    { x: 76, y: 74, rotate: -4 },
+    { x: 50, y: 18, rotate: 3 },
+    { x: 50, y: 82, rotate: -2 },
+  ];
+
+  if (index < presets.length) {
+    return presets[index];
+  }
+
+  const angle = (Math.PI * 2 * index) / Math.max(total, 1);
+  const radius = 22 + (index % 5) * 8;
+  return {
+    x: 50 + Math.cos(angle) * radius,
+    y: 50 + Math.sin(angle) * radius,
+    rotate: ((index % 5) - 2) * 4,
+  };
 }
 
 function getPeriodScore(period: string) {

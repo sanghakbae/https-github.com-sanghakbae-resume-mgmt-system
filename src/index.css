@@ -25,6 +25,60 @@
   }
 }
 
+.resume-tag-cloud {
+  position: relative;
+  display: flex;
+  width: min(100%, 320px);
+  aspect-ratio: 1 / 1;
+  min-height: 300px;
+  margin: 0 auto;
+  align-items: center;
+  justify-content: center;
+  overflow: visible;
+}
+
+.resume-tag-cloud__orbit-layer {
+  position: absolute;
+  inset: 0;
+  animation: resume-tag-cloud-horizontal-drift 7s ease-in-out infinite alternate;
+}
+
+.resume-tag-cloud__item {
+  position: absolute;
+}
+
+.resume-tag-cloud__item--center {
+  transform: translate(-50%, -50%);
+}
+
+.resume-tag-cloud__item--orbit {
+  transform: translate(-50%, -50%);
+}
+
+.resume-tag-cloud__text {
+  display: inline-block;
+  line-height: 1;
+  white-space: nowrap;
+  letter-spacing: -0.02em;
+}
+
+@keyframes resume-tag-cloud-horizontal-drift {
+  from {
+    transform: translateX(-10px);
+  }
+
+  to {
+    transform: translateX(10px);
+  }
+}
+
+@media (max-width: 768px) {
+  .resume-tag-cloud {
+    width: min(100%, 260px);
+    min-height: 260px;
+  }
+}
+
 @media print {
   @page {
     margin: 12mm;

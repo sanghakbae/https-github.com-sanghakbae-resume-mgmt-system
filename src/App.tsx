@@ -1,5 +1,5 @@
 import { ChangeEvent, useEffect, useMemo, useRef, useState } from "react";
-import { Download, Eye, FileUp, LogOut, Pencil, RotateCcw, Save, ShieldCheck } from "lucide-react";
+import { Download, Eye, FileUp, LogOut, Pencil, RotateCcw, Save, ShieldAlert, ShieldCheck } from "lucide-react";
 import html2canvas from "html2canvas";
 import jsPDF from "jspdf";
 import { LoginPage } from "@/components/auth/login-page";
@@ -13,6 +13,8 @@ import { CareerDashboard, ResumePreview } from "@/components/resume/resume-previ
 import { categoryOptions, defaultCompanyProfiles, defaultExperiences, defaultProfile, emptyCompanyForm, emptyExperienceForm } from "@/data/resume";
 import { useGoogleAuth } from "@/hooks/use-google-auth";
 import { useResumeWorkspace } from "@/hooks/use-resume-workspace";
+import { isGeminiReviewConfigured, requestProjectReview } from "@/lib/gemini-review";
+import { prepareProfilePhoto } from "@/lib/profile-photo";
 import { isSupabaseConfigured, uploadResumeAsset } from "@/lib/supabase";
 import type {
   CompanyFormValues,
@@ -21,6 +23,7 @@ import type {
   ExperienceFormValues,
   ExperienceItem,
   ExperienceValidationErrors,
+  ProjectReviewResult,
   ResumeCategory,
   ResumeWorkspace,
   WorkspaceSummary,
@@ -76,6 +79,15 @@ export default function App() {
   const [isUploadingProfilePhoto, setIsUploadingProfilePhoto] = useState(false);
   const [isUploadingExperienceImage, setIsUploadingExperienceImage] = useState(false);
   const [assetUploadError, setAssetUploadError] = useState<string | null>(null);
+  const [isAutoTaggingProject, setIsAutoTaggingProject] = useState(false);
+  const [projectReviewError, setProjectReviewError] = useState<string | null>(null);
+  const [projectReviewChoice, setProjectReviewChoice] = useState<{
+    mode: "create" | "update";
+    original: ExperienceItem;
+    suggested: ExperienceItem;
+    review: ProjectReviewResult;
+    geminiAvailable: boolean;
+  } | null>(null);
   const importWorkspaceInputRef = useRef<HTMLInputElement | null>(null);
   const exportSectionRef = useRef<HTMLDivElement | null>(null);
   const activeOwnerId = isPublicResumeMode ? "public-resume" : isAdmin ? selectedOwnerId ?? user?.sub ?? "" : user?.sub ?? "";
@@ -138,6 +150,7 @@ export default function App() {
   const resetExperienceForm = () => {
     setForm(emptyExperienceForm);
     setFormErrors({});
+    setProjectReviewError(null);
     setEditingId(null);
   };
 
@@ -186,14 +199,19 @@ export default function App() {
     resetCompanyForm();
   };
 
-  const submitExperience = () => {
+  const submitExperience = async () => {
     const errors = validateExperience(form);
     setFormErrors(errors);
+    setProjectReviewError(null);
 
     if (Object.keys(errors).length > 0) {
       return;
     }
 
+    const manualHighlights = form.highlight
+      .split(",")
+      .map((value) => value.trim())
+      .filter(Boolean);
     const nextItem: ExperienceItem = {
       id: editingId ?? Date.now(),
       title: form.title.trim(),
@@ -201,14 +219,44 @@ export default function App() {
       period: form.period.trim(),
       category: form.category,
       description: form.description,
-      highlight: form.highlight
-        .split(",")
-        .map((value) => value.trim())
-        .filter(Boolean),
+      highlight: manualHighlights,
       url: form.url.trim() || undefined,
       image: form.image || undefined,
     };
 
+    setIsAutoTaggingProject(true);
+
+    try {
+      if (!isGeminiReviewConfigured()) {
+        commitExperience(nextItem);
+        return;
+      }
+
+      const review = await retryProjectReview(nextItem, 3);
+
+      setProjectReviewChoice({
+        mode: editingId === null ? "create" : "update",
+        original: nextItem,
+        suggested: {
+          ...nextItem,
+          description: review.suggestedDescription || nextItem.description,
+          highlight: [...new Set([...nextItem.highlight, ...review.suggestedTags])],
+        },
+        review,
+        geminiAvailable: true,
+      });
+      return;
+    } catch (error) {
+      const message = error instanceof Error ? error.message : "Gemini 검토에 실패했습니다.";
+      setProjectReviewError(`${message} 현재 작성 내용으로 저장합니다.`);
+      commitExperience(nextItem);
+      return;
+    } finally {
+      setIsAutoTaggingProject(false);
+    }
+  };
+
+  const commitExperience = (nextItem: ExperienceItem) => {
     setExperiences((prev) => {
       if (editingId === null) {
         return [nextItem, ...prev];
@@ -217,7 +265,28 @@ export default function App() {
       return prev.map((item) => (item.id === editingId ? nextItem : item));
     });
 
+    setProjectReviewChoice(null);
     resetExperienceForm();
+  };
+
+  const retryProjectReview = async (item: ExperienceItem, attempts: number): Promise<ProjectReviewResult> => {
+    let lastError: unknown;
+
+    for (let attempt = 0; attempt < attempts; attempt += 1) {
+      try {
+        return await requestProjectReview({
+          title: item.title,
+          organization: item.organization,
+          category: item.category,
+          description: item.description,
+          existingTags: item.highlight,
+        });
+      } catch (error) {
+        lastError = error;
+      }
+    }
+
+    throw lastError ?? new Error("Gemini review failed");
   };
 
   const startEditingExperience = (item: ExperienceItem) => {
@@ -292,13 +361,15 @@ export default function App() {
     setAssetUploadError(null);
 
     try {
+      const preparedFile = await prepareProfilePhoto(file);
+
       if (!isSupabaseConfigured) {
-        const dataUrl = await readFileAsDataUrl(file);
+        const dataUrl = await readFileAsDataUrl(preparedFile);
         setProfile((prev) => ({ ...prev, photo: dataUrl }));
         return;
       }
 
-      const publicUrl = await uploadResumeAsset(file, activeOwnerId, "profile");
+      const publicUrl = await uploadResumeAsset(preparedFile, activeOwnerId, "profile");
       setProfile((prev) => ({ ...prev, photo: publicUrl }));
     } catch {
       setAssetUploadError("프로필 사진을 업로드하지 못했습니다. 잠시 후 다시 시도하세요.");
@@ -457,6 +528,42 @@ export default function App() {
         <div className="pointer-events-none fixed inset-0 z-50 flex items-center justify-center px-4 screen-only">
           <div className="rounded-[16px] border border-emerald-200 bg-white/95 px-6 py-4 text-center shadow-[0_24px_80px_rgba(15,23,42,0.18)] backdrop-blur">
             <p className="text-base font-semibold text-slate-900">저장되었습니다</p>
+          </div>
+        </div>
+      ) : null}
+      {projectReviewChoice ? (
+        <div className="fixed inset-0 z-50 flex items-center justify-center bg-slate-950/45 px-4 py-6 screen-only">
+          <div className="max-h-full w-full max-w-5xl overflow-y-auto rounded-[20px] border border-slate-200 bg-white shadow-[0_30px_80px_rgba(15,23,42,0.28)]">
+            <div className="border-b border-slate-200 px-5 py-4">
+              <p className="text-lg font-semibold text-slate-950">
+                {projectReviewChoice.mode === "create" ? "등록 내용 선택" : "수정 내용 선택"}
+              </p>
+              <p className="mt-1 text-[13px] leading-5 text-slate-500">
+                작성한 내용과 Gemini 제안을 비교한 뒤 등록할 버전을 선택하세요.
+              </p>
+            </div>
+            <div className="grid gap-4 p-5 lg:grid-cols-2">
+              <ProjectReviewOptionCard
+                title="As-Is"
+                description={projectReviewChoice.original.description}
+                tags={projectReviewChoice.original.highlight}
+                buttonLabel={projectReviewChoice.mode === "create" ? "As-Is로 등록" : "As-Is로 저장"}
+                onSelect={() => commitExperience(projectReviewChoice.original)}
+              />
+              <ProjectReviewOptionCard
+                title="To-Be"
+                helper={projectReviewChoice.geminiAvailable ? projectReviewChoice.review.summary : "Gemini 제안을 받지 못해 현재 내용 기준으로 표시합니다."}
+                description={projectReviewChoice.suggested.description}
+                tags={projectReviewChoice.suggested.highlight}
+                buttonLabel={projectReviewChoice.mode === "create" ? "To-Be로 등록" : "To-Be로 저장"}
+                onSelect={() => commitExperience(projectReviewChoice.suggested)}
+              />
+            </div>
+            <div className="flex justify-end border-t border-slate-200 px-5 py-4">
+              <Button className="border border-slate-200 bg-white text-slate-700" onClick={() => setProjectReviewChoice(null)}>
+                계속 수정
+              </Button>
+            </div>
           </div>
         </div>
       ) : null}
@@ -657,8 +764,10 @@ export default function App() {
                     editingId={editingId}
                     organizations={companies.map((company) => company.organization)}
                     isUploading={isUploadingExperienceImage}
+                    isAutoTagging={isAutoTaggingProject}
+                    reviewError={projectReviewError}
                     onChange={setForm}
-                    onSubmit={submitExperience}
+                    onSubmit={() => void submitExperience()}
                     onCancel={resetExperienceForm}
                     onUploadImage={uploadExperienceImage}
                   />
@@ -730,6 +839,50 @@ function AdminWorkspacePanel({
         </div>
       </CardContent>
     </Card>
+  );
+}
+
+function ProjectReviewOptionCard({
+  title,
+  helper,
+  description,
+  tags,
+  buttonLabel,
+  onSelect,
+}: {
+  title: string;
+  helper?: string;
+  description: string;
+  tags: string[];
+  buttonLabel: string;
+  onSelect: () => void;
+}) {
+  return (
+    <div className="rounded-[16px] border border-slate-200 bg-slate-50/70 p-4">
+      <p className="text-base font-semibold text-slate-950">{title}</p>
+      {helper ? <p className="mt-1 text-[13px] leading-5 text-slate-500">{helper}</p> : null}
+      <div className="mt-4 rounded-[12px] border border-slate-200 bg-white p-3">
+        <p className="text-[12px] font-semibold leading-4 text-slate-500">설명</p>
+        <p className="mt-2 whitespace-pre-wrap text-[13px] leading-6 text-slate-700">{description}</p>
+      </div>
+      <div className="mt-3 rounded-[12px] border border-slate-200 bg-white p-3">
+        <p className="text-[12px] font-semibold leading-4 text-slate-500">태그</p>
+        <div className="mt-2 flex flex-wrap gap-2">
+          {tags.length ? (
+            tags.map((tag) => (
+              <span key={`${title}-${tag}`} className="rounded-full border border-slate-200 bg-slate-50 px-2.5 py-1 text-[12px] leading-4 text-slate-700">
+                {tag}
+              </span>
+            ))
+          ) : (
+            <p className="text-[13px] leading-5 text-slate-500">태그가 없습니다.</p>
+          )}
+        </div>
+      </div>
+      <Button className="mt-4 w-full border border-slate-900 bg-slate-900 text-white" onClick={onSelect}>
+        {buttonLabel}
+      </Button>
+    </div>
   );
 }
 

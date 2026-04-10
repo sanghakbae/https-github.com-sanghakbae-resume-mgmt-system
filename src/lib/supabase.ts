@@ -1,9 +1,10 @@
 import { createClient } from "@supabase/supabase-js";
 
+const enableSupabase = ((import.meta.env.VITE_ENABLE_SUPABASE as string | undefined) ?? "false") === "true";
 const supabaseUrl = (import.meta.env.VITE_SUPABASE_URL as string | undefined)?.trim();
 const supabaseAnonKey = (import.meta.env.VITE_SUPABASE_ANON_KEY as string | undefined)?.trim();
 
-export const isSupabaseConfigured = Boolean(supabaseUrl && supabaseAnonKey);
+export const isSupabaseConfigured = Boolean(enableSupabase && supabaseUrl && supabaseAnonKey);
 
 export const supabase = isSupabaseConfigured
   ? createClient(supabaseUrl!, supabaseAnonKey!)

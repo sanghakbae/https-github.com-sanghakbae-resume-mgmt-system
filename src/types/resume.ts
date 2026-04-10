@@ -65,6 +65,12 @@ export type WorkspaceSummary = {
   updatedAt: string;
 };
 
+export type ProjectReviewResult = {
+  summary: string;
+  suggestedDescription: string;
+  suggestedTags: string[];
+};
+
 export type CompanyProfile = {
   organization: string;
   department?: string;

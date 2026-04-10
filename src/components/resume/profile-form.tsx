@@ -78,7 +78,9 @@ export function ProfileForm({ ownerId, profile, isUploading = false, onChange, o
             <p className="text-[12px] leading-4 text-slate-500">PNG, JPG, GIF를 지원하며 공개 이력서 상단 프로필에 노출됩니다.</p>
             {profile.photo ? (
               <div className="overflow-hidden rounded-[10px] border border-slate-200 bg-slate-50 p-2">
-                <img src={profile.photo} alt={`${profile.name} 프로필`} className="mx-auto h-auto max-h-48 w-auto rounded-[8px] object-contain" />
+                <div className="mx-auto aspect-square max-h-48 w-full max-w-48 overflow-hidden rounded-[8px] bg-slate-100">
+                  <img src={profile.photo} alt={`${profile.name} 프로필`} className="h-full w-full object-cover [object-position:center_20%]" />
+                </div>
               </div>
             ) : null}
             {profile.photo ? (
