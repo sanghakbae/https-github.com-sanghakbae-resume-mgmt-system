@@ -26,7 +26,7 @@ import type {
   VisitLogItem,
 } from "@/types/resume";
 
-const DEFAULT_GOOGLE_CLIENT_ID = "924920443826-lo1msns5cgvnh7u1714ikcqj2fq4srji.apps.googleusercontent.com";
+const DEFAULT_GOOGLE_CLIENT_ID = "924920443826-k59m97pgabmdb42qv9cq63plmuuvvn7s.apps.googleusercontent.com";
 const DEFAULT_PRIMARY_WORKSPACE_ID = "public-resume";
 const FONT_STORAGE_KEY = "resume.font-family";
 const FONT_OPTIONS = [
