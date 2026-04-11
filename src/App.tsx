@@ -87,19 +87,17 @@ export default function App() {
   const editorEmails = parseEnvEmailList(import.meta.env.VITE_EDITOR_EMAILS as string | undefined);
   const primaryAccountEmail = (editorEmails[0] ?? adminEmails[0] ?? DEFAULT_PRIMARY_ACCOUNT_EMAIL).toLowerCase();
   const primaryWorkspaceId = primaryAccountEmail;
-  const allowedEmails = isPublicResumeMode ? editorEmails : adminEmails;
-  const deniedMessage = allowedEmails.length > 0 ? `${allowedEmails.join(", ")}만 로그인 가능합니다.` : "허용된 계정만 로그인 가능합니다.";
+  const allowedEmails = isPublicResumeMode ? [] : adminEmails;
   const isLocalEditorMode = !isPublicResumeMode;
   const { user, isReady, error: authError, signIn, signOut } = useGoogleAuth({
     allowedEmails,
-    deniedMessage,
     enabled: !isLocalEditorMode,
   });
   const normalizedUserEmail = user?.email.toLowerCase() ?? null;
   const currentWorkspaceId = normalizedUserEmail ?? primaryWorkspaceId;
   const isAdmin = isLocalEditorMode || (Boolean(user) && (adminEmails.length === 0 || adminEmails.includes(normalizedUserEmail!)));
   const isPublicEditor = isPublicResumeMode && Boolean(user) && editorEmails.includes(normalizedUserEmail!);
-  const hasAppAccess = isLocalEditorMode || (user ? isPublicEditor : false);
+  const canEdit = isLocalEditorMode || isPublicEditor;
   const [isEditMode, setIsEditMode] = useState(true);
   const [companyForm, setCompanyForm] = useState<CompanyFormValues>(emptyCompanyForm);
   const [companyErrors, setCompanyErrors] = useState<CompanyValidationErrors>({});
@@ -117,8 +115,8 @@ export default function App() {
   const [fontFamily, setFontFamily] = useState<string>(() => getSavedFontFamily());
   const visitOwnerRef = useRef<string | null>(null);
   const activeOwnerId = isPublicResumeMode ? primaryWorkspaceId : isAdmin ? selectedOwnerId ?? currentWorkspaceId : currentWorkspaceId;
-  const effectiveIsEditMode = isPublicResumeMode ? isPublicEditor && isEditMode : isEditMode;
-  const canSaveWorkspace = !isPublicResumeMode || isPublicEditor;
+  const effectiveIsEditMode = canEdit && isEditMode;
+  const canSaveWorkspace = canEdit;
   const fallbackOwnerIds = useMemo(() => (user ? [user.sub, "public-resume"] : ["public-resume"]), [user]);
   const {
     profile,
@@ -204,12 +202,6 @@ export default function App() {
     window.localStorage.setItem(logKey, JSON.stringify(nextLogs));
     setVisitLogs(nextLogs);
   }, [activeOwnerId, isLoading, isPublicResumeMode]);
-
-  useEffect(() => {
-    if (isLocalEditorMode) return;
-    if (!user || hasAppAccess) return;
-    void signOut();
-  }, [hasAppAccess, isLocalEditorMode, signOut, user]);
 
   const groupedExperiences = useMemo(() => {
     const groups = new Map<ResumeCategory, ExperienceItem[]>();
@@ -450,17 +442,6 @@ export default function App() {
     }
   };
 
-  if (user && !hasAppAccess) {
-    return (
-      <LoginPage
-        clientId={googleClientId}
-        isReady={isReady}
-        error={deniedMessage}
-        onLogin={signIn}
-      />
-    );
-  }
-
   return (
     <div className="resume-app h-screen overflow-hidden bg-slate-100 px-3 py-4 sm:px-4 md:px-6 md:py-6">
       {showSavedNotice ? (
@@ -536,7 +517,7 @@ export default function App() {
                   ) : null}
                 </>
               )}
-              {!isPublicResumeMode || isPublicEditor ? (
+              {canEdit ? (
                 <>
                   <Button
                     className={`${headerButtonClass} ${isEditMode ? "w-full border border-slate-900 bg-slate-900 text-white md:w-auto" : "w-full border border-slate-200 bg-white text-slate-700 md:w-auto"}`}
@@ -576,7 +557,7 @@ export default function App() {
         <div className="min-h-0 flex-1 overflow-y-auto overscroll-contain pr-1">
           <div className="space-y-4 md:space-y-5 pb-4">
             <div className={`grid gap-4 pt-1 md:gap-5 ${effectiveIsEditMode ? "xl:grid-cols-[200px_minmax(0,1fr)]" : "grid-cols-1"}`}>
-              {effectiveIsEditMode && (user || isLocalEditorMode) ? (
+              {effectiveIsEditMode ? (
                 <div className="screen-only">
                   <Card className="rounded-[10px] border border-slate-200 bg-white shadow-sm">
                     <CardContent className="flex flex-col items-start gap-3 p-2.5 sm:p-3">
