@@ -20,9 +20,11 @@ export function GoogleSignInButton({ clientId, disabled, onSuccess }: GoogleSign
     buttonRef.current.innerHTML = "";
     const buttonWidth = Math.min(Math.max(buttonRef.current.clientWidth, 220), 360);
 
+    google.accounts.id.disableAutoSelect();
     google.accounts.id.initialize({
       client_id: clientId,
       callback: onSuccess,
+      auto_select: false,
       ux_mode: "popup",
     });
 
