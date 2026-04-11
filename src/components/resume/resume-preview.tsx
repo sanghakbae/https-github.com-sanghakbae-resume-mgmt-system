@@ -39,7 +39,7 @@ export function ResumePreview({
           data-export-intro
         >
           <div className={`flex flex-col ${isCompactHeader ? "items-center gap-0.5" : "gap-3"}`}>
-            <div className={`flex shrink-0 items-center justify-center overflow-hidden rounded-[18px] border border-slate-200 bg-slate-100 ${isCompactHeader ? "h-40 w-40" : "h-36 w-36"}`}>
+            <div className="flex h-40 w-40 shrink-0 items-center justify-center overflow-hidden rounded-[18px] border border-slate-200 bg-slate-100">
               {profile.photo ? (
                 <img
                   src={profile.photo}

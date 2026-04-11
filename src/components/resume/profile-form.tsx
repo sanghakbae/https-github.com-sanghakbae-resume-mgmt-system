@@ -80,21 +80,19 @@ export function ProfileForm({ ownerId, profile, isUploading = false, onChange, o
               </label>
               <p className="text-[12px] leading-4 text-slate-500">PNG, JPG, GIF를 지원하며 공개 이력서 상단 프로필에 노출됩니다.</p>
               {profile.photo ? (
-                <div className="overflow-hidden rounded-[10px] border border-slate-200 bg-slate-50 p-1.5">
-                  <div className="relative mx-auto aspect-square max-h-48 w-full max-w-48 overflow-hidden rounded-[8px] bg-slate-100">
-                    <img
-                      src={profile.photo}
-                      alt={`${profile.name} 프로필`}
-                      className="h-full w-full object-cover"
-                      style={getPhotoTransformStyle(profile)}
-                    />
-                    <div className="pointer-events-none absolute inset-0">
-                      <div className="absolute inset-0 rounded-[8px] border-2 border-white/90 shadow-[inset_0_0_0_1px_rgba(15,23,42,0.2)]" />
-                      <div className="absolute left-1/2 top-0 h-full w-px -translate-x-1/2 bg-white/60" />
-                      <div className="absolute left-0 top-1/2 h-px w-full -translate-y-1/2 bg-white/60" />
-                      <div className="absolute left-2 top-2 rounded-full bg-slate-950/75 px-2 py-0.5 text-[10px] font-semibold leading-4 text-white">
-                        실제 출력 경계
-                      </div>
+                <div className="relative mx-auto flex h-40 w-40 items-center justify-center overflow-hidden rounded-[18px] border border-slate-200 bg-slate-100">
+                  <img
+                    src={profile.photo}
+                    alt={`${profile.name} 프로필`}
+                    className="h-full w-full object-cover"
+                    style={getPhotoTransformStyle(profile)}
+                  />
+                  <div className="pointer-events-none absolute inset-0">
+                    <div className="absolute inset-0 rounded-[18px] border-2 border-white/90 shadow-[inset_0_0_0_1px_rgba(15,23,42,0.2)]" />
+                    <div className="absolute left-1/2 top-0 h-full w-px -translate-x-1/2 bg-white/60" />
+                    <div className="absolute left-0 top-1/2 h-px w-full -translate-y-1/2 bg-white/60" />
+                    <div className="absolute left-2 top-2 rounded-full bg-slate-950/75 px-2 py-0.5 text-[10px] font-semibold leading-4 text-white">
+                      실제 출력 경계
                     </div>
                   </div>
                 </div>
