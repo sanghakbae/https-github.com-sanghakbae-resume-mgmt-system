@@ -81,7 +81,9 @@ export function useGoogleAuth() {
       if (!active) return;
 
       const sessionUser = data.session?.user;
-      if (!sessionUser?.email) return;
+      if (!sessionUser?.email) {
+        return;
+      }
 
       const nextUser = normalizeGoogleUser({
         sub: sessionUser.id,
@@ -99,8 +101,6 @@ export function useGoogleAuth() {
       const sessionUser = session?.user;
 
       if (!sessionUser?.email) {
-        window.localStorage.removeItem(SESSION_STORAGE_KEY);
-        setUser(null);
         return;
       }
 

@@ -63,46 +63,147 @@ export function ProfileForm({ ownerId, profile, isUploading = false, onChange, o
         </FormField>
         <FormField label="소개">
           <textarea
-            className="min-h-[88px] w-full rounded-[10px] border border-slate-200 px-2.5 py-1.5 text-sm leading-5 outline-none"
+            className="min-h-[88px] w-full rounded-[10px] border border-slate-200 bg-slate-50 px-2.5 py-1.5 text-sm leading-5 text-slate-700 outline-none"
             value={profile.summary}
-            onChange={(e) => updateField("summary", e.target.value)}
+            readOnly
           />
+          <p className="mt-1 text-[12px] leading-4 text-slate-500">경력, 산업 군, 수행 업무, 태그를 기준으로 자동 생성됩니다.</p>
         </FormField>
-        <FormField label="이력서 사진">
-          <div className="space-y-2">
-            <label className="flex cursor-pointer items-center justify-center gap-2 rounded-[10px] border border-dashed border-slate-300 bg-slate-50 px-3 py-3 text-[13px] font-medium leading-5 text-slate-700">
-              <ImagePlus className="h-4 w-4" />
-              {isUploading ? "사진 업로드 중" : "사진 업로드"}
-              <input type="file" accept="image/*,.gif" className="hidden" onChange={(event) => void handlePhotoChange(event)} disabled={isUploading} />
-            </label>
-            <p className="text-[12px] leading-4 text-slate-500">PNG, JPG, GIF를 지원하며 공개 이력서 상단 프로필에 노출됩니다.</p>
-            {profile.photo ? (
-              <div className="overflow-hidden rounded-[10px] border border-slate-200 bg-slate-50 p-2">
-                <div className="mx-auto aspect-square max-h-48 w-full max-w-48 overflow-hidden rounded-[8px] bg-slate-100">
-                  <img src={profile.photo} alt={`${profile.name} 프로필`} className="h-full w-full object-cover [object-position:center_20%]" />
+        <div className="grid gap-4 lg:grid-cols-[300px_minmax(0,1fr)] lg:items-start">
+          <FormField label="이력서 사진" className="h-full">
+            <div className="space-y-2">
+              <label className="flex cursor-pointer items-center justify-center gap-2 rounded-[10px] border border-dashed border-slate-300 bg-slate-50 px-3 py-3 text-[13px] font-medium leading-5 text-slate-700">
+                <ImagePlus className="h-4 w-4" />
+                {isUploading ? "사진 업로드 중" : "사진 업로드"}
+                <input type="file" accept="image/*,.gif" className="hidden" onChange={(event) => void handlePhotoChange(event)} disabled={isUploading} />
+              </label>
+              <p className="text-[12px] leading-4 text-slate-500">PNG, JPG, GIF를 지원하며 공개 이력서 상단 프로필에 노출됩니다.</p>
+              {profile.photo ? (
+                <div className="overflow-hidden rounded-[10px] border border-slate-200 bg-slate-50 p-2">
+                  <div className="mx-auto aspect-square max-h-48 w-full max-w-48 overflow-hidden rounded-[8px] bg-slate-100">
+                    <img
+                      src={profile.photo}
+                      alt={`${profile.name} 프로필`}
+                      className="h-full w-full object-cover"
+                      style={{
+                        objectPosition: `${profile.photoPositionX}% ${profile.photoPositionY}%`,
+                        transform: `scale(${profile.photoScale})`,
+                      }}
+                    />
+                  </div>
                 </div>
+              ) : null}
+              {profile.photo ? (
+                <div className="space-y-3 rounded-[10px] border border-slate-200 bg-white p-3">
+                  <div>
+                    <div className="mb-1 flex items-center justify-between text-[12px] leading-4 text-slate-500">
+                      <span>좌우 위치</span>
+                      <span>{profile.photoPositionX}%</span>
+                    </div>
+                    <input
+                      type="range"
+                      min="0"
+                      max="100"
+                      step="1"
+                      value={profile.photoPositionX}
+                      onChange={(e) => updateField("photoPositionX", Number(e.target.value))}
+                      className="w-full"
+                    />
+                  </div>
+                  <div>
+                    <div className="mb-1 flex items-center justify-between text-[12px] leading-4 text-slate-500">
+                      <span>상하 위치</span>
+                      <span>{profile.photoPositionY}%</span>
+                    </div>
+                    <input
+                      type="range"
+                      min="0"
+                      max="100"
+                      step="1"
+                      value={profile.photoPositionY}
+                      onChange={(e) => updateField("photoPositionY", Number(e.target.value))}
+                      className="w-full"
+                    />
+                  </div>
+                  <div>
+                    <div className="mb-1 flex items-center justify-between text-[12px] leading-4 text-slate-500">
+                      <span>확대</span>
+                      <span>{profile.photoScale.toFixed(2)}x</span>
+                    </div>
+                    <input
+                      type="range"
+                      min="1"
+                      max="2"
+                      step="0.01"
+                      value={profile.photoScale}
+                      onChange={(e) => updateField("photoScale", Number(e.target.value))}
+                      className="w-full"
+                    />
+                  </div>
+                </div>
+              ) : null}
+              {profile.photo ? (
+                <Button
+                  className="w-full border border-slate-200 bg-white px-4 py-2 text-slate-700 sm:w-auto"
+                  onClick={() => {
+                    updateField("photo", "");
+                    updateField("photoPositionX", 50);
+                    updateField("photoPositionY", 20);
+                    updateField("photoScale", 1);
+                  }}
+                >
+                  <Trash2 className="mr-2 h-4 w-4" />
+                  사진 제거
+                </Button>
+              ) : null}
+            </div>
+          </FormField>
+
+          <div className="space-y-3">
+            <div className="grid grid-cols-2 items-stretch gap-3">
+              <FormField label="학력" className="h-full min-h-[80px]">
+                <textarea
+                  className="h-[80px] w-full self-start rounded-[10px] border border-slate-200 px-2.5 py-1.5 text-sm leading-5 outline-none"
+                  value={profile.education}
+                  onChange={(e) => updateField("education", e.target.value)}
+                  placeholder={"학교별로 줄바꿈 입력\n예: 한국산업기술대학교 컴퓨터공학과\n건국대학교 정보통신대학원 정보시스템감리학과(휴학)"}
+                />
+              </FormField>
+              <FormField label="경력" className="h-full min-h-[80px]">
+                <textarea
+                  className="h-[80px] w-full self-start rounded-[10px] border border-slate-200 px-2.5 py-1.5 text-sm leading-5 outline-none"
+                  value={profile.career}
+                  onChange={(e) => updateField("career", e.target.value)}
+                />
+              </FormField>
+            </div>
+            <div className="grid grid-cols-2 items-stretch gap-3">
+              <div className="space-y-3">
+                <FormField label="전문분야" className="h-full min-h-[80px]">
+                  <textarea
+                    className="h-[80px] w-full self-start rounded-[10px] border border-slate-200 px-2.5 py-1.5 text-sm leading-5 outline-none"
+                    value={profile.specialty}
+                    onChange={(e) => updateField("specialty", e.target.value)}
+                  />
+                </FormField>
+                <FormField label="자격 사항" className="h-full min-h-[80px]">
+                  <textarea
+                    className="h-[80px] w-full self-start rounded-[10px] border border-slate-200 px-2.5 py-1.5 text-sm leading-5 outline-none"
+                    value={profile.certifications}
+                    onChange={(e) => updateField("certifications", e.target.value)}
+                  />
+                </FormField>
               </div>
-            ) : null}
-            {profile.photo ? (
-              <Button className="w-full border border-slate-200 bg-white px-4 py-2 text-slate-700 sm:w-auto" onClick={() => updateField("photo", "")}>
-                <Trash2 className="mr-2 h-4 w-4" />
-                사진 제거
-              </Button>
-            ) : null}
+              <FormField label="산업 군" className="h-full min-h-[80px]">
+                <textarea
+                  className="h-[80px] w-full self-start rounded-[10px] border border-slate-200 px-2.5 py-1.5 text-sm leading-5 outline-none"
+                  value={profile.industries}
+                  onChange={(e) => updateField("industries", e.target.value)}
+                />
+              </FormField>
+            </div>
           </div>
-        </FormField>
-        <FormField label="학력">
-          <Input value={profile.education} onChange={(e) => updateField("education", e.target.value)} />
-        </FormField>
-        <FormField label="경력">
-          <Input value={profile.career} onChange={(e) => updateField("career", e.target.value)} />
-        </FormField>
-        <FormField label="전문분야">
-          <Input value={profile.specialty} onChange={(e) => updateField("specialty", e.target.value)} />
-        </FormField>
-        <FormField label="주요 경험">
-          <Input value={profile.certifications} onChange={(e) => updateField("certifications", e.target.value)} />
-        </FormField>
+        </div>
       </CardContent>
     </Card>
   );

@@ -1,7 +1,5 @@
-import { ChangeEvent, useEffect, useMemo, useRef, useState } from "react";
-import { Download, Eye, FileUp, LogOut, Pencil, RotateCcw, Save, ShieldAlert, ShieldCheck } from "lucide-react";
-import html2canvas from "html2canvas";
-import jsPDF from "jspdf";
+import { useEffect, useMemo, useState } from "react";
+import { BarChart3, Building2, BriefcaseBusiness, Eye, LogOut, Pencil, RotateCcw, ShieldAlert, ShieldCheck, UserRound } from "lucide-react";
 import { LoginPage } from "@/components/auth/login-page";
 import { GoogleSignInButton } from "@/components/auth/google-sign-in-button";
 import { Button } from "@/components/ui/button";
@@ -13,21 +11,11 @@ import { CareerDashboard, ResumePreview } from "@/components/resume/resume-previ
 import { categoryOptions, defaultCompanyProfiles, defaultExperiences, defaultProfile, emptyCompanyForm, emptyExperienceForm } from "@/data/resume";
 import { useGoogleAuth } from "@/hooks/use-google-auth";
 import { useResumeWorkspace } from "@/hooks/use-resume-workspace";
-import { isGeminiReviewConfigured, requestProjectReview } from "@/lib/gemini-review";
 import { prepareProfilePhoto } from "@/lib/profile-photo";
+import { buildProfileSummary } from "@/lib/profile-summary";
+import { generateSecurityTags, inferExperienceCategory } from "@/lib/security-tags";
 import { isSupabaseConfigured, uploadResumeAsset } from "@/lib/supabase";
-import type {
-  CompanyFormValues,
-  CompanyProfile,
-  CompanyValidationErrors,
-  ExperienceFormValues,
-  ExperienceItem,
-  ExperienceValidationErrors,
-  ProjectReviewResult,
-  ResumeCategory,
-  ResumeWorkspace,
-  WorkspaceSummary,
-} from "@/types/resume";
+import type { CompanyFormValues, CompanyProfile, CompanyValidationErrors, ExperienceFormValues, ExperienceItem, ExperienceValidationErrors, ResumeCategory, WorkspaceSummary } from "@/types/resume";
 
 const DEFAULT_GOOGLE_CLIENT_ID = "924920443826-lo1msns5cgvnh7u1714ikcqj2fq4srji.apps.googleusercontent.com";
 
@@ -75,21 +63,11 @@ export default function App() {
   const [formErrors, setFormErrors] = useState<ExperienceValidationErrors>({});
   const [editingId, setEditingId] = useState<number | null>(null);
   const [selectedOwnerId, setSelectedOwnerId] = useState<string | null>(null);
-  const [isExportingPdf, setIsExportingPdf] = useState(false);
+  const [selectedEditorSection, setSelectedEditorSection] = useState<"dashboard" | "profile" | "company" | "experience">("dashboard");
   const [isUploadingProfilePhoto, setIsUploadingProfilePhoto] = useState(false);
   const [isUploadingExperienceImage, setIsUploadingExperienceImage] = useState(false);
   const [assetUploadError, setAssetUploadError] = useState<string | null>(null);
-  const [isAutoTaggingProject, setIsAutoTaggingProject] = useState(false);
-  const [projectReviewError, setProjectReviewError] = useState<string | null>(null);
-  const [projectReviewChoice, setProjectReviewChoice] = useState<{
-    mode: "create" | "update";
-    original: ExperienceItem;
-    suggested: ExperienceItem;
-    review: ProjectReviewResult;
-    geminiAvailable: boolean;
-  } | null>(null);
-  const importWorkspaceInputRef = useRef<HTMLInputElement | null>(null);
-  const exportSectionRef = useRef<HTMLDivElement | null>(null);
+  const [visitCount, setVisitCount] = useState(0);
   const activeOwnerId = isPublicResumeMode ? "public-resume" : isAdmin ? selectedOwnerId ?? user?.sub ?? "" : user?.sub ?? "";
   const effectiveIsEditMode = isPublicResumeMode ? isPublicEditor && isEditMode : isEditMode;
   const canSaveWorkspace = !isPublicResumeMode || isPublicEditor;
@@ -108,8 +86,6 @@ export default function App() {
     storageMode,
     resetWorkspace,
     listWorkspaces,
-    saveNow,
-    replaceWorkspace,
   } = useResumeWorkspace({
     ownerId: activeOwnerId,
     defaultProfile,
@@ -131,6 +107,28 @@ export default function App() {
     setWorkspaceSummaries(listWorkspaces());
   }, [experiences, isAdmin, listWorkspaces, profile, storageMode, updatedAt]);
 
+  useEffect(() => {
+    if (!activeOwnerId || typeof window === "undefined") {
+      setVisitCount(0);
+      return;
+    }
+
+    const countKey = getVisitCountKey(activeOwnerId);
+    const sessionKey = getVisitSessionKey(activeOwnerId);
+    const raw = window.localStorage.getItem(countKey);
+    const currentCount = raw ? Number.parseInt(raw, 10) : 0;
+    const safeCount = Number.isFinite(currentCount) && currentCount > 0 ? currentCount : 0;
+
+    setVisitCount(safeCount);
+
+    if (!window.sessionStorage.getItem(sessionKey)) {
+      const nextCount = safeCount + 1;
+      window.localStorage.setItem(countKey, String(nextCount));
+      window.sessionStorage.setItem(sessionKey, "1");
+      setVisitCount(nextCount);
+    }
+  }, [activeOwnerId]);
+
   const groupedExperiences = useMemo(() => {
     const groups = new Map<ResumeCategory, ExperienceItem[]>();
 
@@ -146,11 +144,20 @@ export default function App() {
     () => categoryOptions.flatMap((category) => groupedExperiences.get(category) ?? []),
     [groupedExperiences],
   );
+  const derivedProfile = useMemo(
+    () => ({ ...profile, summary: buildProfileSummary(profile, companies, allExperiences) }),
+    [allExperiences, companies, profile],
+  );
+  const sidebarSections = [
+    { key: "dashboard", label: "대시보드", icon: BarChart3 },
+    { key: "profile", label: "기본 정보", icon: UserRound },
+    { key: "company", label: "회사 추가", icon: Building2 },
+    { key: "experience", label: "수행 업무 추가", icon: BriefcaseBusiness },
+  ] as const;
 
   const resetExperienceForm = () => {
     setForm(emptyExperienceForm);
     setFormErrors({});
-    setProjectReviewError(null);
     setEditingId(null);
   };
 
@@ -199,10 +206,9 @@ export default function App() {
     resetCompanyForm();
   };
 
-  const submitExperience = async () => {
+  const submitExperience = () => {
     const errors = validateExperience(form);
     setFormErrors(errors);
-    setProjectReviewError(null);
 
     if (Object.keys(errors).length > 0) {
       return;
@@ -212,48 +218,31 @@ export default function App() {
       .split(",")
       .map((value) => value.trim())
       .filter(Boolean);
+    const inferredCategory = inferExperienceCategory({
+      title: form.title.trim(),
+      organization: form.organization.trim(),
+      description: form.description,
+      existingTags: manualHighlights,
+    });
+    const autoTags = generateSecurityTags({
+      title: form.title.trim(),
+      organization: form.organization.trim(),
+      description: form.description,
+      existingTags: manualHighlights,
+    });
     const nextItem: ExperienceItem = {
       id: editingId ?? Date.now(),
       title: form.title.trim(),
       organization: form.organization.trim(),
       period: form.period.trim(),
-      category: form.category,
+      category: inferredCategory,
       description: form.description,
-      highlight: manualHighlights,
+      highlight: autoTags,
       url: form.url.trim() || undefined,
       image: form.image || undefined,
     };
 
-    setIsAutoTaggingProject(true);
-
-    try {
-      if (!isGeminiReviewConfigured()) {
-        commitExperience(nextItem);
-        return;
-      }
-
-      const review = await retryProjectReview(nextItem, 3);
-
-      setProjectReviewChoice({
-        mode: editingId === null ? "create" : "update",
-        original: nextItem,
-        suggested: {
-          ...nextItem,
-          description: review.suggestedDescription || nextItem.description,
-          highlight: [...new Set([...nextItem.highlight, ...review.suggestedTags])],
-        },
-        review,
-        geminiAvailable: true,
-      });
-      return;
-    } catch (error) {
-      const message = error instanceof Error ? error.message : "Gemini 검토에 실패했습니다.";
-      setProjectReviewError(`${message} 현재 작성 내용으로 저장합니다.`);
-      commitExperience(nextItem);
-      return;
-    } finally {
-      setIsAutoTaggingProject(false);
-    }
+    commitExperience(nextItem);
   };
 
   const commitExperience = (nextItem: ExperienceItem) => {
@@ -265,28 +254,7 @@ export default function App() {
       return prev.map((item) => (item.id === editingId ? nextItem : item));
     });
 
-    setProjectReviewChoice(null);
     resetExperienceForm();
-  };
-
-  const retryProjectReview = async (item: ExperienceItem, attempts: number): Promise<ProjectReviewResult> => {
-    let lastError: unknown;
-
-    for (let attempt = 0; attempt < attempts; attempt += 1) {
-      try {
-        return await requestProjectReview({
-          title: item.title,
-          organization: item.organization,
-          category: item.category,
-          description: item.description,
-          existingTags: item.highlight,
-        });
-      } catch (error) {
-        lastError = error;
-      }
-    }
-
-    throw lastError ?? new Error("Gemini review failed");
   };
 
   const startEditingExperience = (item: ExperienceItem) => {
@@ -365,12 +333,12 @@ export default function App() {
 
       if (!isSupabaseConfigured) {
         const dataUrl = await readFileAsDataUrl(preparedFile);
-        setProfile((prev) => ({ ...prev, photo: dataUrl }));
+        setProfile((prev) => ({ ...prev, photo: dataUrl, photoPositionX: 50, photoPositionY: 20, photoScale: 1 }));
         return;
       }
 
       const publicUrl = await uploadResumeAsset(preparedFile, activeOwnerId, "profile");
-      setProfile((prev) => ({ ...prev, photo: publicUrl }));
+      setProfile((prev) => ({ ...prev, photo: publicUrl, photoPositionX: 50, photoPositionY: 20, photoScale: 1 }));
     } catch {
       setAssetUploadError("프로필 사진을 업로드하지 못했습니다. 잠시 후 다시 시도하세요.");
     } finally {
@@ -398,132 +366,12 @@ export default function App() {
     }
   };
 
-  const buildWorkspaceSnapshot = (): ResumeWorkspace => ({
-    ownerId: activeOwnerId,
-    editorEmail: null,
-    profile,
-    companies,
-    experiences,
-    updatedAt: new Date().toISOString(),
-  });
-
-  const exportWorkspaceJson = () => {
-    const snapshot = buildWorkspaceSnapshot();
-    const blob = new Blob([JSON.stringify(snapshot, null, 2)], { type: "application/json" });
-    const downloadUrl = URL.createObjectURL(blob);
-    const link = document.createElement("a");
-    const safeName = (profile.name || "resume").replace(/\s+/g, "-").toLowerCase();
-
-    link.href = downloadUrl;
-    link.download = `${safeName}-workspace.json`;
-    document.body.appendChild(link);
-    link.click();
-    link.remove();
-    URL.revokeObjectURL(downloadUrl);
-  };
-
-  const isValidImportedWorkspace = (value: unknown): value is Partial<ResumeWorkspace> & Pick<ResumeWorkspace, "profile" | "companies" | "experiences"> => {
-    if (!value || typeof value !== "object") return false;
-
-    const candidate = value as Record<string, unknown>;
-
-    return Boolean(
-      candidate.profile &&
-        typeof candidate.profile === "object" &&
-        Array.isArray(candidate.companies) &&
-        Array.isArray(candidate.experiences),
-    );
-  };
-
-  const importWorkspaceJson = async (event: ChangeEvent<HTMLInputElement>) => {
-    const file = event.target.files?.[0];
-    event.target.value = "";
-
-    if (!file) return;
-
-    try {
-      const parsed = JSON.parse(await file.text()) as unknown;
-
-      if (!isValidImportedWorkspace(parsed)) {
-        throw new Error("invalid-workspace");
-      }
-
-      await replaceWorkspace({
-        ownerId: activeOwnerId,
-        editorEmail: parsed.editorEmail ?? null,
-        profile: parsed.profile,
-        companies: parsed.companies,
-        experiences: parsed.experiences,
-        updatedAt: new Date().toISOString(),
-      });
-
-      resetCompanyForm();
-      resetExperienceForm();
-      setAssetUploadError(null);
-    } catch {
-      setAssetUploadError("작업공간 JSON을 불러오지 못했습니다. 형식을 확인하세요.");
-    }
-  };
-
-  const exportPdf = () => {
-    const exportNode = exportSectionRef.current;
-    if (!exportNode || isExportingPdf) return;
-
-    setIsExportingPdf(true);
-
-    window.setTimeout(async () => {
-      const snapshotNode = createExportSnapshotNode(exportNode);
-      document.body.appendChild(snapshotNode);
-
-      try {
-        paginateExportSnapshot(snapshotNode);
-
-        const canvas = await html2canvas(snapshotNode, {
-          backgroundColor: "#f1f5f9",
-          scale: 2,
-          useCORS: true,
-          scrollX: 0,
-          scrollY: 0,
-          width: snapshotNode.scrollWidth,
-          height: snapshotNode.scrollHeight,
-          windowWidth: snapshotNode.scrollWidth,
-          windowHeight: snapshotNode.scrollHeight,
-        });
-
-        const pdf = new jsPDF("p", "mm", "a4");
-        const pageWidth = pdf.internal.pageSize.getWidth();
-        const pageHeight = pdf.internal.pageSize.getHeight();
-        const imageWidth = pageWidth;
-        const imageHeight = (canvas.height * imageWidth) / canvas.width;
-        let remainingHeight = imageHeight;
-        let position = 0;
-
-        const imageData = canvas.toDataURL("image/png");
-        pdf.addImage(imageData, "PNG", 0, position, imageWidth, imageHeight);
-        remainingHeight -= pageHeight;
-
-        while (remainingHeight > 0) {
-          position = remainingHeight - imageHeight;
-          pdf.addPage();
-          pdf.addImage(imageData, "PNG", 0, position, imageWidth, imageHeight);
-          remainingHeight -= pageHeight;
-        }
-
-        pdf.save(`${profile.name || "resume"}-dashboard.pdf`);
-      } finally {
-        snapshotNode.remove();
-        setIsExportingPdf(false);
-      }
-    }, 50);
-  };
-
   if (!isPublicResumeMode && !user) {
     return <LoginPage clientId={googleClientId} isReady={isReady} error={authError} onLogin={signIn} />;
   }
 
   return (
     <div className="resume-app h-screen overflow-hidden bg-slate-100 px-3 py-4 sm:px-4 md:px-6 md:py-6">
-      <input ref={importWorkspaceInputRef} type="file" accept="application/json" className="hidden" onChange={importWorkspaceJson} />
       {showSavedNotice ? (
         <div className="pointer-events-none fixed inset-0 z-50 flex items-center justify-center px-4 screen-only">
           <div className="rounded-[16px] border border-emerald-200 bg-white/95 px-6 py-4 text-center shadow-[0_24px_80px_rgba(15,23,42,0.18)] backdrop-blur">
@@ -531,69 +379,25 @@ export default function App() {
           </div>
         </div>
       ) : null}
-      {projectReviewChoice ? (
-        <div className="fixed inset-0 z-50 flex items-center justify-center bg-slate-950/45 px-4 py-6 screen-only">
-          <div className="max-h-full w-full max-w-5xl overflow-y-auto rounded-[20px] border border-slate-200 bg-white shadow-[0_30px_80px_rgba(15,23,42,0.28)]">
-            <div className="border-b border-slate-200 px-5 py-4">
-              <p className="text-lg font-semibold text-slate-950">
-                {projectReviewChoice.mode === "create" ? "등록 내용 선택" : "수정 내용 선택"}
-              </p>
-              <p className="mt-1 text-[13px] leading-5 text-slate-500">
-                작성한 내용과 Gemini 제안을 비교한 뒤 등록할 버전을 선택하세요.
-              </p>
-            </div>
-            <div className="grid gap-4 p-5 lg:grid-cols-2">
-              <ProjectReviewOptionCard
-                title="As-Is"
-                description={projectReviewChoice.original.description}
-                tags={projectReviewChoice.original.highlight}
-                buttonLabel={projectReviewChoice.mode === "create" ? "As-Is로 등록" : "As-Is로 저장"}
-                onSelect={() => commitExperience(projectReviewChoice.original)}
-              />
-              <ProjectReviewOptionCard
-                title="To-Be"
-                helper={projectReviewChoice.geminiAvailable ? projectReviewChoice.review.summary : "Gemini 제안을 받지 못해 현재 내용 기준으로 표시합니다."}
-                description={projectReviewChoice.suggested.description}
-                tags={projectReviewChoice.suggested.highlight}
-                buttonLabel={projectReviewChoice.mode === "create" ? "To-Be로 등록" : "To-Be로 저장"}
-                onSelect={() => commitExperience(projectReviewChoice.suggested)}
-              />
-            </div>
-            <div className="flex justify-end border-t border-slate-200 px-5 py-4">
-              <Button className="border border-slate-200 bg-white text-slate-700" onClick={() => setProjectReviewChoice(null)}>
-                계속 수정
-              </Button>
-            </div>
-          </div>
-        </div>
-      ) : null}
       <div className="flex h-full flex-col gap-3 md:gap-5">
         <Card className="z-30 shrink-0 rounded-[10px] border border-slate-200 bg-white/95 shadow-sm backdrop-blur screen-only">
-          <CardContent className="flex flex-col gap-3 p-3.5 sm:p-4 md:flex-row md:items-center md:justify-between">
+          <CardContent className="flex flex-col gap-2.5 p-2.5 sm:p-3 md:flex-row md:items-center md:justify-between">
             <div>
-              <p className="text-[13px] leading-5 text-slate-500">이력 관리</p>
-              <h1 className="text-xl font-semibold tracking-tight sm:text-2xl">이력서 페이지</h1>
-              <p className="mt-1 text-[13px] leading-5 text-slate-500">
-                {isPublicResumeMode
-                  ? isPublicEditor
-                    ? "공개 이력서 페이지입니다. 본인 계정으로 로그인되어 현재 브라우저에서 편집할 수 있습니다."
-                    : "공개 이력서 페이지입니다. 접속한 누구나 동일한 이력서를 볼 수 있습니다."
-                  : `${user?.name ?? ""} 계정으로 로그인되어 있습니다. ${isAdmin ? "관리자 권한으로 작업공간 전환이 가능합니다." : "내용은 사용자별 작업 공간에 저장됩니다."}`}
-              </p>
+              <h1 className="text-xl font-semibold tracking-tight sm:text-2xl">이력서 관리 시스템</h1>
             </div>
 
-            <div className="grid w-full gap-2 md:flex md:w-auto md:flex-wrap">
+            <div className="grid w-full gap-1 md:flex md:w-auto md:flex-wrap">
               {!isPublicResumeMode ? (
                 <>
-                  <div className="flex w-full items-center gap-3 rounded-[10px] border border-slate-200 bg-slate-50 px-3 py-2 md:w-auto">
+                  <div className="flex w-full items-center gap-2 rounded-[10px] border border-slate-200 bg-slate-50 px-2.5 py-1 md:w-auto">
                     {user?.picture ? <img src={user.picture} alt={user.name} className="h-8 w-8 rounded-full" referrerPolicy="no-referrer" /> : null}
                     <div className="min-w-0 text-left">
-                      <p className="truncate text-[13px] font-medium leading-5 text-slate-900">{user?.name}</p>
-                      <p className="truncate text-[12px] leading-4 text-slate-500">{user?.email}</p>
+                      <p className="truncate text-[13px] font-medium leading-4 text-slate-900">{user?.name}</p>
+                      <p className="truncate text-[12px] leading-3 text-slate-500">{user?.email}</p>
                     </div>
                   </div>
                   {isAdmin ? (
-                    <div className="flex w-full items-center gap-2 rounded-[10px] border border-emerald-200 bg-emerald-50 px-3 py-2 text-[12px] font-medium leading-4 text-emerald-700 md:w-auto">
+                    <div className="flex w-full items-center gap-2 rounded-[10px] border border-emerald-200 bg-emerald-50 px-2.5 py-1 text-[12px] font-medium leading-4 text-emerald-700 md:w-auto">
                       <ShieldCheck className="h-4 w-4" />
                       관리자
                     </div>
@@ -601,17 +405,14 @@ export default function App() {
                 </>
               ) : (
                 <>
-                  <div className="flex w-full items-center gap-2 rounded-[10px] border border-slate-200 bg-slate-50 px-3 py-2 text-[12px] font-medium leading-4 text-slate-600 md:w-auto">
-                    {isPublicEditor ? "공개용 레주메 · 편집 가능" : "공개용 레주메"}
+                  <div className="flex w-full min-w-[180px] items-center gap-2 rounded-[10px] border border-slate-200 bg-slate-50 px-2.5 py-1 text-[12px] font-medium leading-4 text-slate-600 md:w-auto">
+                    방문 회수: {visitCount}
                   </div>
                   {user ? (
-                    <div className="flex w-full items-center gap-3 rounded-[10px] border border-slate-200 bg-slate-50 px-3 py-2 md:w-auto">
+                    <div className="flex w-full items-center gap-2 rounded-[10px] border border-slate-200 bg-slate-50 px-2.5 py-1 md:w-auto">
                       {user.picture ? <img src={user.picture} alt={user.name} className="h-8 w-8 rounded-full" referrerPolicy="no-referrer" /> : null}
                       <div className="min-w-0 text-left">
-                        <p className="truncate text-[13px] font-medium leading-5 text-slate-900">{user.name}</p>
-                        <p className="truncate text-[12px] leading-4 text-slate-500">
-                          {isPublicEditor ? "편집 권한 계정" : "읽기 전용 계정"}
-                        </p>
+                        <p className="truncate text-[13px] font-medium leading-4 text-slate-900">{user.name}</p>
                       </div>
                     </div>
                   ) : null}
@@ -621,17 +422,17 @@ export default function App() {
                     </div>
                   ) : null}
                   {!user && !googleClientId ? (
-                    <div className="flex w-full items-center rounded-[10px] border border-amber-200 bg-amber-50 px-3 py-2 text-[12px] leading-4 text-amber-700 md:w-auto">
+                    <div className="flex w-full items-center rounded-[10px] border border-amber-200 bg-amber-50 px-2.5 py-1 text-[12px] leading-4 text-amber-700 md:w-auto">
                       현재 배포본에 Google 로그인 설정이 연결되지 않아 편집 로그인을 사용할 수 없습니다.
                     </div>
                   ) : null}
                   {authError ? (
-                    <div className="flex w-full items-center rounded-[10px] border border-rose-200 bg-rose-50 px-3 py-2 text-[12px] leading-4 text-rose-700 md:w-auto">
+                    <div className="flex w-full items-center rounded-[10px] border border-rose-200 bg-rose-50 px-2.5 py-1 text-[12px] leading-4 text-rose-700 md:w-auto">
                       {authError}
                     </div>
                   ) : null}
                   {assetUploadError ? (
-                    <div className="flex w-full items-center rounded-[10px] border border-rose-200 bg-rose-50 px-3 py-2 text-[12px] leading-4 text-rose-700 md:w-auto">
+                    <div className="flex w-full items-center rounded-[10px] border border-rose-200 bg-rose-50 px-2.5 py-1 text-[12px] leading-4 text-rose-700 md:w-auto">
                       {assetUploadError}
                     </div>
                   ) : null}
@@ -648,7 +449,10 @@ export default function App() {
                   </Button>
                   <Button
                     className={`${headerButtonClass} ${!isEditMode ? "w-full border border-slate-900 bg-slate-900 text-white md:w-auto" : "w-full border border-slate-200 bg-white text-slate-700 md:w-auto"}`}
-                    onClick={() => setIsEditMode(false)}
+                    onClick={() => {
+                      setSelectedEditorSection("dashboard");
+                      setIsEditMode(false);
+                    }}
                   >
                     <Eye className="mr-2 h-4 w-4" />
                     공개 보기
@@ -659,31 +463,8 @@ export default function App() {
                       샘플 복원
                     </Button>
                   ) : null}
-                  <Button className={`${headerButtonClass} w-full border border-slate-200 bg-white text-slate-700 md:w-auto`} onClick={exportWorkspaceJson}>
-                    <Download className="mr-2 h-4 w-4" />
-                    JSON 내보내기
-                  </Button>
-                  <Button
-                    className={`${headerButtonClass} w-full border border-slate-200 bg-white text-slate-700 md:w-auto`}
-                    onClick={() => importWorkspaceInputRef.current?.click()}
-                  >
-                    <FileUp className="mr-2 h-4 w-4" />
-                    JSON 가져오기
-                  </Button>
-                  <Button
-                    className={`${headerButtonClass} ${effectiveIsEditMode ? "w-full border border-sky-900 bg-sky-900 text-white md:w-auto" : "w-full border border-slate-200 bg-white text-slate-700 md:w-auto"}`}
-                    onClick={() => void saveNow()}
-                    disabled={isSaving}
-                  >
-                    <Save className="mr-2 h-4 w-4" />
-                    {isSaving ? "저장 중" : effectiveIsEditMode ? "저장" : "임시저장"}
-                  </Button>
                 </>
               ) : null}
-              <Button className={`${headerButtonClass} w-full border border-slate-200 bg-white text-slate-700 md:w-auto`} onClick={exportPdf} disabled={isExportingPdf}>
-                <Download className="mr-2 h-4 w-4" />
-                {isExportingPdf ? "PDF 생성 중" : "PDF 저장"}
-              </Button>
               {!isPublicResumeMode || user ? (
                 <Button className={`${headerButtonClass} w-full border border-slate-200 bg-white text-slate-700 md:w-auto`} onClick={signOut}>
                   <LogOut className="mr-2 h-4 w-4" />
@@ -695,94 +476,143 @@ export default function App() {
         </Card>
 
         <div className="min-h-0 flex-1 overflow-y-auto overscroll-contain pr-1">
-          <div ref={exportSectionRef} className="space-y-4 md:space-y-5 pb-4">
-            {allExperiences.length ? (
-              <div data-export-dashboard>
-                <CareerDashboard items={allExperiences} profile={profile} companies={companies} />
-              </div>
-            ) : null}
+          <div className="space-y-4 md:space-y-5 pb-4">
+            <div className={`grid gap-4 pt-1 md:gap-5 ${effectiveIsEditMode ? "xl:grid-cols-[200px_minmax(0,1fr)]" : "grid-cols-1"}`}>
+              {effectiveIsEditMode && user ? (
+                <div className="screen-only">
+                  <Card className="rounded-[10px] border border-slate-200 bg-white shadow-sm">
+                    <CardContent className="flex flex-col items-start gap-3 p-2.5 sm:p-3">
+                      <div className="w-full text-center">
+                        <h2 className="text-base font-semibold leading-6 text-slate-900">이력 수정</h2>
+                      </div>
+                      <div className="grid w-full gap-2">
+                        {sidebarSections.map(({ key, label, icon: Icon }) => {
+                          const isActive = selectedEditorSection === key;
 
-            <div className={`grid gap-4 pt-1 md:gap-5 ${effectiveIsEditMode ? "xl:grid-cols-[360px_1fr]" : "grid-cols-1"}`}>
-              {effectiveIsEditMode && (
-                <div className="space-y-4 md:space-y-5">
-                  <Card className="rounded-[10px] border border-slate-200 bg-white shadow-sm screen-only">
-                    <CardContent className="space-y-3 p-3.5 sm:p-4">
-                      <div>
-                        <h2 className="text-base font-semibold leading-6">저장 상태</h2>
-                        <p className="text-[13px] leading-5 text-slate-500">
-                          {workspaceError
-                            ? workspaceError
-                            : isLoading
-                              ? "작업공간을 불러오는 중입니다."
-                              : isSaving
-                                ? `저장 중입니다. (${storageMode.toUpperCase()})`
-                                : `저장됨 · ${storageMode.toUpperCase()}${updatedAt ? ` · ${formatUpdatedAt(updatedAt)}` : ""}`}
-                        </p>
+                          return (
+                            <Button
+                              key={label}
+                              className={isActive ? "w-full !justify-start border border-slate-900 bg-slate-900 text-left text-white" : "w-full !justify-start border border-slate-200 bg-white text-left text-slate-700"}
+                              onClick={() => setSelectedEditorSection(key)}
+                            >
+                              <Icon className="mr-2 h-4 w-4" />
+                              {label}
+                            </Button>
+                          );
+                        })}
                       </div>
                     </CardContent>
                   </Card>
-                  {isAdmin ? (
-                    <AdminWorkspacePanel
-                      currentUserId={user.sub}
-                      activeOwnerId={activeOwnerId}
-                      workspaces={workspaceSummaries}
-                      onSelect={setSelectedOwnerId}
-                    />
-                  ) : null}
-                  {isPublicResumeMode ? (
-                    <Card className="rounded-[10px] border border-amber-200 bg-amber-50 shadow-sm screen-only">
-                      <CardContent className="space-y-2 p-3.5 sm:p-4">
-                        <h2 className="text-base font-semibold leading-6 text-amber-900">공개 페이지 편집 안내</h2>
-                        <p className="text-[13px] leading-5 text-amber-800">
-                          현재 편집은 이 브라우저 작업공간에 저장됩니다. GitHub Pages 정적 배포본 특성상 수정 내용이 모든 방문자에게 즉시 공유되지는 않습니다.
-                        </p>
+                </div>
+              ) : null}
+
+              <div className="space-y-4 md:space-y-5">
+                {effectiveIsEditMode ? (
+                  <>
+                    <Card className="rounded-[10px] border border-slate-200 bg-white shadow-sm screen-only">
+                      <CardContent className="space-y-3 p-3.5 sm:p-4">
+                        <div>
+                          <h2 className="text-base font-semibold leading-6">저장 상태</h2>
+                          <p className="text-[13px] leading-5 text-slate-500">
+                            {workspaceError
+                              ? workspaceError
+                              : isLoading
+                                ? "작업공간을 불러오는 중입니다."
+                                : isSaving
+                                  ? `저장 중입니다. (${storageMode.toUpperCase()})`
+                                  : `저장됨 · ${storageMode.toUpperCase()}${updatedAt ? ` · ${formatUpdatedAt(updatedAt)}` : ""}`}
+                          </p>
+                        </div>
                       </CardContent>
                     </Card>
-                  ) : null}
-                  <ProfileForm
-                    ownerId={activeOwnerId}
-                    profile={profile}
-                    isUploading={isUploadingProfilePhoto}
-                    onChange={setProfile}
-                    onUploadPhoto={uploadProfilePhoto}
-                  />
-                  <CompanyForm
-                    form={companyForm}
-                    errors={companyErrors}
-                    editingOrganization={editingCompanyOrganization}
-                    companies={companies}
-                    onChange={setCompanyForm}
-                    onSubmit={submitCompany}
-                    onEdit={startEditingCompany}
-                    onRemove={removeCompany}
-                    onCancel={resetCompanyForm}
-                  />
-                  <ExperienceForm
-                    ownerId={activeOwnerId}
-                    form={form}
-                    errors={formErrors}
-                    editingId={editingId}
-                    organizations={companies.map((company) => company.organization)}
-                    isUploading={isUploadingExperienceImage}
-                    isAutoTagging={isAutoTaggingProject}
-                    reviewError={projectReviewError}
-                    onChange={setForm}
-                    onSubmit={() => void submitExperience()}
-                    onCancel={resetExperienceForm}
-                    onUploadImage={uploadExperienceImage}
-                  />
-                </div>
-              )}
+                    {isAdmin ? (
+                      <AdminWorkspacePanel
+                        currentUserId={user.sub}
+                        activeOwnerId={activeOwnerId}
+                        workspaces={workspaceSummaries}
+                        onSelect={setSelectedOwnerId}
+                      />
+                    ) : null}
+                  </>
+                ) : null}
 
-              <div className="space-y-4 md:space-y-5 print-content">
-              <ResumePreview
-                isEditMode={effectiveIsEditMode}
-                profile={profile}
-                companies={companies}
-                experiences={allExperiences}
-                onEditExperience={startEditingExperience}
-                onRemoveExperience={removeExperience}
-              />
+                <div className="space-y-4 md:space-y-5 print-content">
+                  {selectedEditorSection === "dashboard" ? (
+                    effectiveIsEditMode ? (
+                      <div data-export-dashboard>
+                        <CareerDashboard items={allExperiences} profile={derivedProfile} companies={companies} />
+                      </div>
+                    ) : (
+                      <div className="space-y-4">
+                        <Card className="rounded-[10px] border border-slate-200 bg-white shadow-sm">
+                          <CardContent className="space-y-4 p-3.5 sm:p-4 md:p-5">
+                            <div>
+                              <h2 className="text-base font-semibold leading-6">경력 대시보드</h2>
+                              <p className="text-[13px] leading-5 text-slate-500">공개 보기에서 경력 흐름과 핵심 지표를 확인합니다.</p>
+                            </div>
+                            <CareerDashboard items={allExperiences} profile={derivedProfile} companies={companies} />
+                          </CardContent>
+                        </Card>
+                        <Card className="rounded-[10px] border border-slate-200 bg-white shadow-sm">
+                          <CardContent className="space-y-4 p-3.5 sm:p-4 md:p-5">
+                            <div>
+                              <h2 className="text-2xl font-extrabold leading-7 tracking-tight text-slate-950 drop-shadow-[0_1px_0_rgba(255,255,255,0.7)]">
+                                배상학 이력서
+                              </h2>
+                            </div>
+                            <ResumePreview
+                              isEditMode={effectiveIsEditMode}
+                              profile={derivedProfile}
+                              companies={companies}
+                              experiences={allExperiences}
+                              onEditExperience={startEditingExperience}
+                              onRemoveExperience={removeExperience}
+                            />
+                          </CardContent>
+                        </Card>
+                      </div>
+                    )
+                  ) : null}
+                  {selectedEditorSection === "profile" ? (
+                    <ProfileForm
+                      ownerId={activeOwnerId}
+                      profile={derivedProfile}
+                      isUploading={isUploadingProfilePhoto}
+                      onChange={setProfile}
+                      onUploadPhoto={uploadProfilePhoto}
+                    />
+                  ) : null}
+                  {selectedEditorSection === "company" ? (
+                    <CompanyForm
+                      form={companyForm}
+                      errors={companyErrors}
+                      editingOrganization={editingCompanyOrganization}
+                      companies={companies}
+                      onChange={setCompanyForm}
+                      onSubmit={submitCompany}
+                      onEdit={startEditingCompany}
+                      onRemove={removeCompany}
+                      onCancel={resetCompanyForm}
+                    />
+                  ) : null}
+                  {selectedEditorSection === "experience" ? (
+                    <ExperienceForm
+                      ownerId={activeOwnerId}
+                      form={form}
+                      errors={formErrors}
+                      editingId={editingId}
+                      organizations={companies.map((company) => company.organization)}
+                      experiences={allExperiences}
+                      isUploading={isUploadingExperienceImage}
+                      onChange={setForm}
+                      onSubmit={submitExperience}
+                      onCancel={resetExperienceForm}
+                      onEdit={startEditingExperience}
+                      onRemove={removeExperience}
+                      onUploadImage={uploadExperienceImage}
+                    />
+                  ) : null}
+                </div>
               </div>
             </div>
           </div>
@@ -842,50 +672,6 @@ function AdminWorkspacePanel({
   );
 }
 
-function ProjectReviewOptionCard({
-  title,
-  helper,
-  description,
-  tags,
-  buttonLabel,
-  onSelect,
-}: {
-  title: string;
-  helper?: string;
-  description: string;
-  tags: string[];
-  buttonLabel: string;
-  onSelect: () => void;
-}) {
-  return (
-    <div className="rounded-[16px] border border-slate-200 bg-slate-50/70 p-4">
-      <p className="text-base font-semibold text-slate-950">{title}</p>
-      {helper ? <p className="mt-1 text-[13px] leading-5 text-slate-500">{helper}</p> : null}
-      <div className="mt-4 rounded-[12px] border border-slate-200 bg-white p-3">
-        <p className="text-[12px] font-semibold leading-4 text-slate-500">설명</p>
-        <p className="mt-2 whitespace-pre-wrap text-[13px] leading-6 text-slate-700">{description}</p>
-      </div>
-      <div className="mt-3 rounded-[12px] border border-slate-200 bg-white p-3">
-        <p className="text-[12px] font-semibold leading-4 text-slate-500">태그</p>
-        <div className="mt-2 flex flex-wrap gap-2">
-          {tags.length ? (
-            tags.map((tag) => (
-              <span key={`${title}-${tag}`} className="rounded-full border border-slate-200 bg-slate-50 px-2.5 py-1 text-[12px] leading-4 text-slate-700">
-                {tag}
-              </span>
-            ))
-          ) : (
-            <p className="text-[13px] leading-5 text-slate-500">태그가 없습니다.</p>
-          )}
-        </div>
-      </div>
-      <Button className="mt-4 w-full border border-slate-900 bg-slate-900 text-white" onClick={onSelect}>
-        {buttonLabel}
-      </Button>
-    </div>
-  );
-}
-
 function formatUpdatedAt(value: string) {
   const date = new Date(value);
   if (Number.isNaN(date.getTime())) return value;
@@ -898,81 +684,11 @@ function formatUpdatedAt(value: string) {
   }).format(date);
 }
 
-function createExportSnapshotNode(exportNode: HTMLDivElement) {
-  const snapshotRoot = document.createElement("div");
-  snapshotRoot.style.position = "fixed";
-  snapshotRoot.style.left = "-100000px";
-  snapshotRoot.style.top = "0";
-  snapshotRoot.style.width = "1120px";
-  snapshotRoot.style.padding = "24px";
-  snapshotRoot.style.background = "#f1f5f9";
-  snapshotRoot.style.color = "#0f172a";
-  snapshotRoot.style.fontFamily = '"Pretendard", "Noto Sans KR", system-ui, sans-serif';
-  snapshotRoot.style.boxSizing = "border-box";
-  const dashboardNode = exportNode.querySelector("[data-export-dashboard]")?.cloneNode(true) as HTMLElement | null;
-  const previewNode = exportNode.querySelector("[data-export-resume]")?.cloneNode(true) as HTMLElement | null;
 
-  if (dashboardNode) snapshotRoot.appendChild(dashboardNode);
-  if (previewNode) snapshotRoot.appendChild(previewNode);
-
-  return snapshotRoot;
+function getVisitCountKey(ownerId: string) {
+  return `resume.visit-count.${ownerId}`;
 }
 
-function paginateExportSnapshot(snapshotRoot: HTMLDivElement) {
-  const rawDashboard = snapshotRoot.querySelector("[data-export-dashboard]") as HTMLElement | null;
-  const rawResume = snapshotRoot.querySelector("[data-export-resume]") as HTMLElement | null;
-
-  snapshotRoot.innerHTML = "";
-
-  if (rawDashboard) {
-    const firstPage = createExportPage();
-    firstPage.appendChild(rawDashboard);
-    snapshotRoot.appendChild(firstPage);
-  }
-
-  if (!rawResume) {
-    return;
-  }
-
-  const intro = rawResume.querySelector("[data-export-intro]")?.cloneNode(true) as HTMLElement | null;
-  const companySections = Array.from(rawResume.querySelectorAll("[data-export-company]")) as HTMLElement[];
-  const maxPageHeight = 1450;
-
-  let page = createResumeExportPage(rawResume);
-  snapshotRoot.appendChild(page.outer);
-
-  if (intro) {
-    page.content.appendChild(intro);
-  }
-
-  for (const section of companySections) {
-    const clonedSection = section.cloneNode(true) as HTMLElement;
-    page.content.appendChild(clonedSection);
-
-    if (page.outer.scrollHeight > maxPageHeight && page.content.children.length > (intro ? 1 : 0)) {
-      clonedSection.remove();
-      page = createResumeExportPage(rawResume);
-      snapshotRoot.appendChild(page.outer);
-      page.content.appendChild(clonedSection);
-    }
-  }
-}
-
-function createExportPage() {
-  const page = document.createElement("section");
-  page.style.marginBottom = "24px";
-  page.style.breakAfter = "page";
-  return page;
-}
-
-function createResumeExportPage(resumeTemplate: HTMLElement) {
-  const outer = resumeTemplate.cloneNode(false) as HTMLElement;
-  const contentTemplate = resumeTemplate.querySelector("[data-export-resume-content]") as HTMLElement | null;
-  const content = contentTemplate ? (contentTemplate.cloneNode(false) as HTMLElement) : document.createElement("div");
-
-  outer.appendChild(content);
-  outer.style.marginBottom = "24px";
-  outer.style.breakAfter = "page";
-
-  return { outer, content };
+function getVisitSessionKey(ownerId: string) {
+  return `resume.visit-count.session.${ownerId}`;
 }

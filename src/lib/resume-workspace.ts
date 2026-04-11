@@ -1,4 +1,5 @@
 import type { CompanyProfile, ExperienceItem, Profile, ResumeWorkspace, WorkspaceSummary } from "@/types/resume";
+import { generateSecurityTags, inferExperienceCategory } from "@/lib/security-tags";
 import { isSupabaseConfigured, supabase } from "@/lib/supabase";
 
 const WORKSPACE_KEY_PREFIX = "resume.workspace.";
@@ -9,6 +10,18 @@ function getApiBaseUrl() {
 
 function getLocalWorkspaceKey(ownerId: string) {
   return `${WORKSPACE_KEY_PREFIX}${ownerId}`;
+}
+
+function loadLocalWorkspace(ownerId: string) {
+  if (typeof window === "undefined") return null;
+
+  try {
+    const raw = window.localStorage.getItem(getLocalWorkspaceKey(ownerId));
+    if (!raw) return null;
+    return JSON.parse(raw) as ResumeWorkspace;
+  } catch {
+    return null;
+  }
 }
 
 function createWorkspace(ownerId: string, profile: Profile, companies: CompanyProfile[], experiences: ExperienceItem[]): ResumeWorkspace {
@@ -65,25 +78,27 @@ function ensureUniqueExperienceIds(items: ExperienceItem[]) {
 }
 
 function normalizeExperienceCategory(item: ExperienceItem): ExperienceItem {
-  const source = `${item.title} ${item.description} ${item.highlight.join(" ")}`.toLowerCase();
-  const isCertificationProject =
-    source.includes("isms") ||
-    source.includes("isms-p") ||
-    source.includes("iso 27001") ||
-    source.includes("iso27001") ||
-    source.includes("csap") ||
-    source.includes("인증");
-
-  const normalizedItem = {
+  const normalizedItem: ExperienceItem = {
     ...item,
     organization: normalizeCompanyName(item.organization),
   };
+  const highlight = generateSecurityTags({
+    title: normalizedItem.title,
+    organization: normalizedItem.organization,
+    description: normalizedItem.description,
+    existingTags: normalizedItem.highlight,
+  });
 
-  if (!isCertificationProject) {
-    return normalizedItem;
-  }
-
-  return { ...normalizedItem, category: "인증" };
+  return {
+    ...normalizedItem,
+    category: inferExperienceCategory({
+      title: normalizedItem.title,
+      organization: normalizedItem.organization,
+      description: normalizedItem.description,
+      existingTags: highlight,
+    }),
+    highlight,
+  };
 }
 
 function mergeWorkspaceWithDefaults(
@@ -103,7 +118,7 @@ function mergeWorkspaceWithDefaults(
 
   return {
     ...workspace,
-    profile: workspace.profile ?? defaultProfile,
+    profile: { ...defaultProfile, ...(workspace.profile ?? {}) },
     companies:
       existingCompanies.length > 0
         ? normalizedCompanies.filter(
@@ -135,6 +150,11 @@ export async function loadWorkspace(ownerId: string, defaultProfile: Profile, de
     }
 
     if (!data) {
+      const localWorkspace = loadLocalWorkspace(ownerId);
+      if (localWorkspace) {
+        return mergeWorkspaceWithDefaults(localWorkspace, defaultProfile, defaultCompanies, defaultExperiences);
+      }
+
       return createWorkspace(ownerId, defaultProfile, defaultCompanies, defaultExperiences);
     }
 
@@ -166,9 +186,8 @@ export async function loadWorkspace(ownerId: string, defaultProfile: Profile, de
   }
 
   try {
-    const raw = window.localStorage.getItem(getLocalWorkspaceKey(ownerId));
-    if (!raw) return createWorkspace(ownerId, defaultProfile, defaultCompanies, defaultExperiences);
-    const workspace = JSON.parse(raw) as ResumeWorkspace;
+    const workspace = loadLocalWorkspace(ownerId);
+    if (!workspace) return createWorkspace(ownerId, defaultProfile, defaultCompanies, defaultExperiences);
     return mergeWorkspaceWithDefaults(workspace, defaultProfile, defaultCompanies, defaultExperiences);
   } catch {
     return createWorkspace(ownerId, defaultProfile, defaultCompanies, defaultExperiences);

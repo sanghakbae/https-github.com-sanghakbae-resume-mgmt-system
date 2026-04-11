@@ -58,19 +58,22 @@ export function ExperienceCard({ item, isEditMode, onEdit, onRemove }: Experienc
       </div>
 
       {item.highlight.length ? (
-        <div className="mt-3 flex flex-wrap items-center gap-2">
-          <span className="rounded-full border border-slate-200 bg-slate-900 px-2.5 py-1 text-[12px] leading-4 text-white">
+        <div className="mt-3 flex flex-wrap items-center gap-1">
+          <span className="inline-flex min-h-5 items-center justify-center rounded-[5px] border border-slate-200 bg-slate-900 px-1.5 py-0.5 text-[10px] leading-none text-white">
             {categoryMeta[item.category].label}
           </span>
           {item.highlight.map((tag) => (
-            <span key={`${item.id}-${tag}`} className="rounded-full border border-slate-200 bg-slate-50 px-2.5 py-1 text-[12px] leading-4 text-slate-600">
+            <span
+              key={`${item.id}-${tag}`}
+              className="inline-flex min-h-5 items-center justify-center rounded-[5px] border border-slate-200 bg-slate-50 px-1.5 py-0.5 text-[10px] leading-none text-slate-600"
+            >
               {tag}
             </span>
           ))}
         </div>
       ) : (
-        <div className="mt-3 flex flex-wrap items-center gap-2">
-          <span className="rounded-full border border-slate-200 bg-slate-900 px-2.5 py-1 text-[12px] leading-4 text-white">
+        <div className="mt-3 flex flex-wrap items-center gap-1">
+          <span className="inline-flex min-h-5 items-center justify-center rounded-[5px] border border-slate-200 bg-slate-900 px-1.5 py-0.5 text-[10px] leading-none text-white">
             {categoryMeta[item.category].label}
           </span>
         </div>

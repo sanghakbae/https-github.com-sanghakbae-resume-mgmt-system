@@ -28,19 +28,24 @@
 .resume-tag-cloud {
   position: relative;
   display: flex;
-  width: min(100%, 320px);
+  width: min(100%, 280px);
   aspect-ratio: 1 / 1;
-  min-height: 300px;
+  min-height: 280px;
   margin: 0 auto;
   align-items: center;
   justify-content: center;
-  overflow: visible;
+  overflow: hidden;
+  padding: 10px;
+  perspective: 1000px;
+  perspective-origin: center;
 }
 
 .resume-tag-cloud__orbit-layer {
   position: absolute;
   inset: 0;
-  animation: resume-tag-cloud-horizontal-drift 7s ease-in-out infinite alternate;
+  transform-style: preserve-3d;
+  transform-origin: 50% 50%;
+  animation: resume-tag-cloud-rotate-y 22s linear infinite;
 }
 
 .resume-tag-cloud__item {
@@ -57,25 +62,27 @@
 
 .resume-tag-cloud__text {
   display: inline-block;
-  line-height: 1;
+  line-height: 1.1;
   white-space: nowrap;
   letter-spacing: -0.02em;
+  transform-style: preserve-3d;
+  backface-visibility: hidden;
 }
 
-@keyframes resume-tag-cloud-horizontal-drift {
+@keyframes resume-tag-cloud-rotate-y {
   from {
-    transform: translateX(-10px);
+    transform: rotateY(-180deg);
   }
 
   to {
-    transform: translateX(10px);
+    transform: rotateY(180deg);
   }
 }
 
 @media (max-width: 768px) {
   .resume-tag-cloud {
-    width: min(100%, 260px);
-    min-height: 260px;
+    width: min(100%, 240px);
+    min-height: 240px;
   }
 }
 

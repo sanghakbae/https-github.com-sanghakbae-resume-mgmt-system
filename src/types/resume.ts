@@ -19,9 +19,13 @@ export type Profile = {
   role: string;
   summary: string;
   photo?: string;
+  photoPositionX: number;
+  photoPositionY: number;
+  photoScale: number;
   education: string;
   career: string;
   specialty: string;
+  industries: string;
   certifications: string;
 };
 
@@ -63,12 +67,6 @@ export type WorkspaceSummary = {
   ownerId: string;
   name: string;
   updatedAt: string;
-};
-
-export type ProjectReviewResult = {
-  summary: string;
-  suggestedDescription: string;
-  suggestedTags: string[];
 };
 
 export type CompanyProfile = {
