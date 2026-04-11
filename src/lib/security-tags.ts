@@ -175,6 +175,13 @@ export function generateSecurityTags(input: ProjectTagInput) {
     }
   }
 
+  const hasStrongSecuritySignal =
+    /모의해킹|취약점|인증|준거성|보안|risk|security|isms|csap|iso 27001|iso 27017|pci-dss|gdpr|hipaa|cpra|appi|ot|ics|scada|waf|hardening|hardening|aut?omation/i.test(rawSource);
+
+  if (!hasStrongSecuritySignal && scoredTags.size === 0) {
+    return dedupeTags(dedupeTags(input.existingTags ?? [])).slice(0, MAX_SECURITY_TAGS);
+  }
+
   if (source.includes("정책") || source.includes("지침") || source.includes("절차")) {
     addScore("보안 정책", 2);
     addScore("보안 프로세스", 2);
@@ -190,8 +197,10 @@ export function generateSecurityTags(input: ProjectTagInput) {
   if (source.includes("마스터플랜")) addScore("보안 마스터플랜", 2);
 
   const inlineTags = extractInlineProductTags(rawSource);
-  for (const tag of inlineTags) {
-    addScore(tag, 1);
+  if (scoredTags.size > 0 || hasStrongSecuritySignal) {
+    for (const tag of inlineTags) {
+      addScore(tag, 1);
+    }
   }
 
   const manualTags = dedupeTags(input.existingTags ?? []).slice(0, MAX_SECURITY_TAGS);

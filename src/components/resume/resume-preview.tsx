@@ -2,6 +2,7 @@ import { Award, BarChart3, BriefcaseBusiness, ShieldCheck, Sparkles, Target, Tre
 import { Card, CardContent } from "@/components/ui/card";
 import { categoryMeta, categoryOptions, profileHeaderIcon, profileInfoItems } from "@/data/resume";
 import type { CompanyProfile, ExperienceItem, Profile } from "@/types/resume";
+import { getPhotoTransformStyle } from "@/lib/photo-style";
 import { ExperienceCard } from "./experience-card";
 import { InfoBox } from "./info-box";
 
@@ -44,10 +45,7 @@ export function ResumePreview({
                   src={profile.photo}
                   alt={`${profile.name} 프로필 사진`}
                   className="h-full w-full object-cover"
-                  style={{
-                    objectPosition: `${profile.photoPositionX}% ${profile.photoPositionY}%`,
-                    transform: `scale(${profile.photoScale})`,
-                  }}
+                  style={getPhotoTransformStyle(profile)}
                 />
               ) : (
                 <div className="flex h-10 w-10 items-center justify-center rounded-[10px] bg-slate-900 text-white">
@@ -74,8 +72,8 @@ export function ResumePreview({
 
         <div className="mt-6 space-y-6">
           {companyGroups.map(({ company, items }) => (
-            <section key={company.organization} className="rounded-[18px] border border-slate-200 bg-slate-50/70 p-4 sm:p-5" data-export-company>
-              <div className="flex flex-col gap-4 border-b border-slate-200 pb-4">
+            <section key={company.organization} className="rounded-[18px] border border-slate-200 bg-slate-50/70 p-3.5 sm:p-4" data-export-company>
+              <div className="flex flex-col gap-3 border-b border-slate-200 pb-3.5">
                 <div className="flex flex-col gap-2 md:flex-row md:items-start md:justify-between">
                   <div>
                     <h3 className="text-lg font-semibold leading-6 text-slate-950">{company.organization}</h3>
@@ -88,11 +86,11 @@ export function ResumePreview({
                   </div>
                 </div>
                 <p className="text-sm leading-6 text-slate-600">{company.summary}</p>
-                <div className="grid gap-2 md:grid-cols-2">
+                <div className="grid gap-1 md:grid-cols-3">
                   {company.responsibilities.map((responsibility) => (
                     <div
                       key={responsibility}
-                      className="flex min-h-[54px] items-center justify-center rounded-[12px] border border-slate-200 bg-white px-3 py-2 text-center text-[13px] leading-5 text-slate-700"
+                      className="flex min-h-[38px] items-center justify-center rounded-[10px] border border-slate-200 bg-white px-2 py-1 text-center text-[12px] font-semibold leading-4 text-slate-700"
                     >
                       {responsibility}
                     </div>
@@ -284,7 +282,7 @@ export function CareerDashboard({
               </div>
             </AccentPanel>
             <AccentPanel icon={BriefcaseBusiness} title="병역사항">
-              <p className="text-[12px] leading-5 text-slate-700">육군 / 보병 / 2001.08.04 ~ 2004.07.13 / 병역특례(소집해제)</p>
+              <p className="text-[12px] leading-5 text-slate-700">{profile.military}</p>
             </AccentPanel>
           </div>
         </div>
@@ -322,10 +320,10 @@ export function CareerDashboard({
           <div className="space-y-4">
             <div className="grid gap-4 items-stretch lg:grid-cols-[1fr_1fr]" data-export-dashboard-secondary>
               <div className="h-full p-1" data-export-tag-distribution>
-                <p className="text-sm font-semibold text-slate-900">핵심 역량 분포</p>
-                <div className="resume-tag-cloud mt-4 flex-1">
+                <p className="text-center text-sm font-semibold text-slate-900">핵심 역량 분포</p>
+                <div className="resume-tag-cloud mt-4 flex flex-1 justify-center">
                   {tagDistribution.length ? (
-                    <div className="resume-tag-cloud__orbit-layer">
+                    <div className="resume-tag-cloud__orbit-layer mx-auto">
                       {tagDistribution.slice(0, 1).map(([tag, count]) => {
                         const strongestCount = Math.max(tagDistribution[0]?.[1] ?? 1, 1);
                         const emphasis = count / strongestCount;

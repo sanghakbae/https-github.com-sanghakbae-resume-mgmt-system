@@ -4,6 +4,7 @@ import { Button } from "@/components/ui/button";
 import { Card, CardContent } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
 import type { Profile } from "@/types/resume";
+import { getPhotoTransformStyle } from "@/lib/photo-style";
 import { FormField } from "./form-field";
 
 type ProfileFormProps = {
@@ -69,8 +70,8 @@ export function ProfileForm({ ownerId, profile, isUploading = false, onChange, o
           />
           <p className="mt-1 text-[12px] leading-4 text-slate-500">경력, 산업 군, 수행 업무, 태그를 기준으로 자동 생성됩니다.</p>
         </FormField>
-        <div className="grid gap-4 lg:grid-cols-[300px_minmax(0,1fr)] lg:items-start">
-          <FormField label="이력서 사진" className="h-full">
+        <div className="grid gap-3 lg:grid-cols-[288px_minmax(0,1fr)] lg:items-start">
+          <FormField label="이력서 사진" className="h-fit self-start rounded-[16px] border border-slate-200 bg-slate-50/60 p-2.5 shadow-[0_1px_0_rgba(255,255,255,0.85)_inset]">
             <div className="space-y-2">
               <label className="flex cursor-pointer items-center justify-center gap-2 rounded-[10px] border border-dashed border-slate-300 bg-slate-50 px-3 py-3 text-[13px] font-medium leading-5 text-slate-700">
                 <ImagePlus className="h-4 w-4" />
@@ -79,22 +80,27 @@ export function ProfileForm({ ownerId, profile, isUploading = false, onChange, o
               </label>
               <p className="text-[12px] leading-4 text-slate-500">PNG, JPG, GIF를 지원하며 공개 이력서 상단 프로필에 노출됩니다.</p>
               {profile.photo ? (
-                <div className="overflow-hidden rounded-[10px] border border-slate-200 bg-slate-50 p-2">
-                  <div className="mx-auto aspect-square max-h-48 w-full max-w-48 overflow-hidden rounded-[8px] bg-slate-100">
+                <div className="overflow-hidden rounded-[10px] border border-slate-200 bg-slate-50 p-1.5">
+                  <div className="relative mx-auto aspect-square max-h-48 w-full max-w-48 overflow-hidden rounded-[8px] bg-slate-100">
                     <img
                       src={profile.photo}
                       alt={`${profile.name} 프로필`}
                       className="h-full w-full object-cover"
-                      style={{
-                        objectPosition: `${profile.photoPositionX}% ${profile.photoPositionY}%`,
-                        transform: `scale(${profile.photoScale})`,
-                      }}
+                      style={getPhotoTransformStyle(profile)}
                     />
+                    <div className="pointer-events-none absolute inset-0">
+                      <div className="absolute inset-0 rounded-[8px] border-2 border-white/90 shadow-[inset_0_0_0_1px_rgba(15,23,42,0.2)]" />
+                      <div className="absolute left-1/2 top-0 h-full w-px -translate-x-1/2 bg-white/60" />
+                      <div className="absolute left-0 top-1/2 h-px w-full -translate-y-1/2 bg-white/60" />
+                      <div className="absolute left-2 top-2 rounded-full bg-slate-950/75 px-2 py-0.5 text-[10px] font-semibold leading-4 text-white">
+                        실제 출력 경계
+                      </div>
+                    </div>
                   </div>
                 </div>
               ) : null}
               {profile.photo ? (
-                <div className="space-y-3 rounded-[10px] border border-slate-200 bg-white p-3">
+                <div className="space-y-2.5 rounded-[10px] border border-slate-200 bg-white p-2.5">
                   <div>
                     <div className="mb-1 flex items-center justify-between text-[12px] leading-4 text-slate-500">
                       <span>좌우 위치</span>
@@ -159,8 +165,8 @@ export function ProfileForm({ ownerId, profile, isUploading = false, onChange, o
             </div>
           </FormField>
 
-          <div className="space-y-3">
-            <div className="grid grid-cols-2 items-stretch gap-3">
+          <div className="h-fit self-start rounded-[16px] border border-slate-200 bg-white p-2.5 shadow-[0_1px_0_rgba(255,255,255,0.9)_inset]">
+            <div className="grid grid-cols-2 gap-3">
               <FormField label="학력" className="h-full min-h-[80px]">
                 <textarea
                   className="h-[80px] w-full self-start rounded-[10px] border border-slate-200 px-2.5 py-1.5 text-sm leading-5 outline-none"
@@ -176,24 +182,28 @@ export function ProfileForm({ ownerId, profile, isUploading = false, onChange, o
                   onChange={(e) => updateField("career", e.target.value)}
                 />
               </FormField>
-            </div>
-            <div className="grid grid-cols-2 items-stretch gap-3">
-              <div className="space-y-3">
-                <FormField label="전문분야" className="h-full min-h-[80px]">
-                  <textarea
-                    className="h-[80px] w-full self-start rounded-[10px] border border-slate-200 px-2.5 py-1.5 text-sm leading-5 outline-none"
-                    value={profile.specialty}
-                    onChange={(e) => updateField("specialty", e.target.value)}
-                  />
-                </FormField>
-                <FormField label="자격 사항" className="h-full min-h-[80px]">
-                  <textarea
-                    className="h-[80px] w-full self-start rounded-[10px] border border-slate-200 px-2.5 py-1.5 text-sm leading-5 outline-none"
-                    value={profile.certifications}
-                    onChange={(e) => updateField("certifications", e.target.value)}
-                  />
-                </FormField>
-              </div>
+              <FormField label="전문분야" className="h-full min-h-[80px]">
+                <textarea
+                  className="h-[80px] w-full self-start rounded-[10px] border border-slate-200 px-2.5 py-1.5 text-sm leading-5 outline-none"
+                  value={profile.specialty}
+                  onChange={(e) => updateField("specialty", e.target.value)}
+                />
+              </FormField>
+              <FormField label="자격 사항" className="h-full min-h-[80px]">
+                <textarea
+                  className="h-[80px] w-full self-start rounded-[10px] border border-slate-200 px-2.5 py-1.5 text-sm leading-5 outline-none"
+                  value={profile.certifications}
+                  onChange={(e) => updateField("certifications", e.target.value)}
+                />
+              </FormField>
+              <FormField label="병역 사항" className="h-full min-h-[80px]">
+                <textarea
+                  className="h-[80px] w-full self-start rounded-[10px] border border-slate-200 px-2.5 py-1.5 text-sm leading-5 outline-none"
+                  value={profile.military}
+                  onChange={(e) => updateField("military", e.target.value)}
+                  placeholder="예: 육군 / 보병 / 2001.08.04 ~ 2004.07.13 / 병역특례(소집해제)"
+                />
+              </FormField>
               <FormField label="산업 군" className="h-full min-h-[80px]">
                 <textarea
                   className="h-[80px] w-full self-start rounded-[10px] border border-slate-200 px-2.5 py-1.5 text-sm leading-5 outline-none"

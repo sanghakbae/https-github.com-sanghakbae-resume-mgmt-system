@@ -16,6 +16,8 @@ export const profileInfoItems = [
   { key: "education", label: "학력", icon: GraduationCap },
   { key: "career", label: "경력", icon: Briefcase },
   { key: "specialty", label: "전문분야", icon: Shield },
+  { key: "certifications", label: "자격 사항", icon: Award },
+  { key: "military", label: "병역 사항", icon: FileText },
   { key: "industries", label: "산업 군", icon: CheckCircle2 },
 ] as const;
 
@@ -170,6 +172,7 @@ export const defaultProfile: Profile = {
   education: "한국산업기술대학교 컴퓨터공학과\n건국대학교 정보통신대학원 정보시스템감리학과(휴학)",
   career: "2007.01 ~ 현재",
   specialty: "ISMS / ISMS-P / ISO 27001 / CSAP / IT·OT 보안 / 모의해킹 / 취약점 진단",
+  military: "육군 / 보병 / 2001.08.04 ~ 2004.07.13 / 병역특례(소집해제)",
   industries: "AI 서비스 / 제조 / 유통 / 금융 / 공공 / 발전 / 에너지 / 이커머스",
   certifications: "CISSP / LPIC Level 1 / 정보처리기사 / 전자계산기기능사 / 전자기기기능사 / Nozomi Networks Certified Engineer",
 };

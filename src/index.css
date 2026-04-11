@@ -4,7 +4,7 @@
 
 @layer base {
   html {
-    font-family: "Pretendard", "Noto Sans KR", system-ui, sans-serif;
+    font-family: var(--resume-font-family, "KorPub 돋움체", "Pretendard", "Noto Sans KR", system-ui, sans-serif);
     color: #0f172a;
     background: #f1f5f9;
   }

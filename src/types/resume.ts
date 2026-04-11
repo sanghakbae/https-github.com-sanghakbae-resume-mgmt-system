@@ -25,6 +25,7 @@ export type Profile = {
   education: string;
   career: string;
   specialty: string;
+  military: string;
   industries: string;
   certifications: string;
 };
@@ -67,6 +68,15 @@ export type WorkspaceSummary = {
   ownerId: string;
   name: string;
   updatedAt: string;
+};
+
+export type VisitLogItem = {
+  id: string;
+  visitedAt: string;
+  mode: "편집 모드" | "공개 보기";
+  ownerName: string;
+  userLabel: string;
+  ipAddress?: string;
 };
 
 export type CompanyProfile = {

@@ -1,5 +1,5 @@
 import { useEffect, useMemo, useState } from "react";
-import { BarChart3, Building2, BriefcaseBusiness, Eye, LogOut, Pencil, RotateCcw, ShieldAlert, ShieldCheck, UserRound } from "lucide-react";
+import { BarChart3, Building2, BriefcaseBusiness, Eye, LogOut, Pencil, RotateCcw, Settings2, ShieldAlert, ShieldCheck, UserRound } from "lucide-react";
 import { LoginPage } from "@/components/auth/login-page";
 import { GoogleSignInButton } from "@/components/auth/google-sign-in-button";
 import { Button } from "@/components/ui/button";
@@ -15,9 +15,47 @@ import { prepareProfilePhoto } from "@/lib/profile-photo";
 import { buildProfileSummary } from "@/lib/profile-summary";
 import { generateSecurityTags, inferExperienceCategory } from "@/lib/security-tags";
 import { isSupabaseConfigured, uploadResumeAsset } from "@/lib/supabase";
-import type { CompanyFormValues, CompanyProfile, CompanyValidationErrors, ExperienceFormValues, ExperienceItem, ExperienceValidationErrors, ResumeCategory, WorkspaceSummary } from "@/types/resume";
+import type {
+  CompanyFormValues,
+  CompanyProfile,
+  CompanyValidationErrors,
+  ExperienceFormValues,
+  ExperienceItem,
+  ExperienceValidationErrors,
+  ResumeCategory,
+  VisitLogItem,
+  WorkspaceSummary,
+} from "@/types/resume";
 
 const DEFAULT_GOOGLE_CLIENT_ID = "924920443826-lo1msns5cgvnh7u1714ikcqj2fq4srji.apps.googleusercontent.com";
+const FONT_STORAGE_KEY = "resume.font-family";
+const FONT_OPTIONS = [
+  {
+    value: "korpub-dotum",
+    label: "KorPub 돋움체",
+    stack: '"KorPub 돋움체", "KorPub Dotum", "Pretendard", "Noto Sans KR", "Malgun Gothic", sans-serif',
+  },
+  {
+    value: "pretendard",
+    label: "Pretendard",
+    stack: '"Pretendard", "Noto Sans KR", "Malgun Gothic", sans-serif',
+  },
+  {
+    value: "noto-sans-kr",
+    label: "Noto Sans KR",
+    stack: '"Noto Sans KR", "Pretendard", "Malgun Gothic", sans-serif',
+  },
+  {
+    value: "malgun-gothic",
+    label: "맑은 고딕",
+    stack: '"Malgun Gothic", "Noto Sans KR", "Pretendard", sans-serif',
+  },
+  {
+    value: "apple-sd-gothic-neo",
+    label: "Apple SD Gothic Neo",
+    stack: '"Apple SD Gothic Neo", "Pretendard", "Noto Sans KR", sans-serif',
+  },
+] as const;
 
 function validateExperience(form: ExperienceFormValues): ExperienceValidationErrors {
   const errors: ExperienceValidationErrors = {};
@@ -63,11 +101,14 @@ export default function App() {
   const [formErrors, setFormErrors] = useState<ExperienceValidationErrors>({});
   const [editingId, setEditingId] = useState<number | null>(null);
   const [selectedOwnerId, setSelectedOwnerId] = useState<string | null>(null);
-  const [selectedEditorSection, setSelectedEditorSection] = useState<"dashboard" | "profile" | "company" | "experience">("dashboard");
+  const [selectedEditorSection, setSelectedEditorSection] = useState<"dashboard" | "profile" | "company" | "experience" | "visit-log">("dashboard");
   const [isUploadingProfilePhoto, setIsUploadingProfilePhoto] = useState(false);
   const [isUploadingExperienceImage, setIsUploadingExperienceImage] = useState(false);
   const [assetUploadError, setAssetUploadError] = useState<string | null>(null);
   const [visitCount, setVisitCount] = useState(0);
+  const [visitLogs, setVisitLogs] = useState<VisitLogItem[]>([]);
+  const [isSettingsOpen, setIsSettingsOpen] = useState(false);
+  const [fontFamily, setFontFamily] = useState<string>(() => getSavedFontFamily());
   const activeOwnerId = isPublicResumeMode ? "public-resume" : isAdmin ? selectedOwnerId ?? user?.sub ?? "" : user?.sub ?? "";
   const effectiveIsEditMode = isPublicResumeMode ? isPublicEditor && isEditMode : isEditMode;
   const canSaveWorkspace = !isPublicResumeMode || isPublicEditor;
@@ -108,26 +149,49 @@ export default function App() {
   }, [experiences, isAdmin, listWorkspaces, profile, storageMode, updatedAt]);
 
   useEffect(() => {
-    if (!activeOwnerId || typeof window === "undefined") {
+    if (typeof document === "undefined") return;
+
+    const selectedOption = FONT_OPTIONS.find((option) => option.value === fontFamily) ?? FONT_OPTIONS[0];
+    document.documentElement.style.setProperty("--resume-font-family", selectedOption.stack);
+    window.localStorage.setItem(FONT_STORAGE_KEY, selectedOption.value);
+  }, [fontFamily]);
+
+  useEffect(() => {
+    if (isLoading || !activeOwnerId || typeof window === "undefined") {
       setVisitCount(0);
+      setVisitLogs([]);
       return;
     }
 
     const countKey = getVisitCountKey(activeOwnerId);
     const sessionKey = getVisitSessionKey(activeOwnerId);
+    const logKey = getVisitLogKey(activeOwnerId);
     const raw = window.localStorage.getItem(countKey);
     const currentCount = raw ? Number.parseInt(raw, 10) : 0;
     const safeCount = Number.isFinite(currentCount) && currentCount > 0 ? currentCount : 0;
+    const rawLogs = window.localStorage.getItem(logKey);
+    const parsedLogs = safeParseVisitLogs(rawLogs);
 
     setVisitCount(safeCount);
+    setVisitLogs(parsedLogs);
 
     if (!window.sessionStorage.getItem(sessionKey)) {
       const nextCount = safeCount + 1;
       window.localStorage.setItem(countKey, String(nextCount));
       window.sessionStorage.setItem(sessionKey, "1");
       setVisitCount(nextCount);
+
+      const nextLog = createVisitLogEntry({
+        ownerName: profile.name,
+        isPublicResumeMode,
+        userName: user?.name ?? "게스트",
+        userEmail: user?.email ?? "",
+      });
+      const nextLogs = [nextLog, ...parsedLogs].slice(0, 200);
+      window.localStorage.setItem(logKey, JSON.stringify(nextLogs));
+      setVisitLogs(nextLogs);
     }
-  }, [activeOwnerId]);
+  }, [activeOwnerId, isLoading, isPublicResumeMode, profile.name, user?.email, user?.name]);
 
   const groupedExperiences = useMemo(() => {
     const groups = new Map<ResumeCategory, ExperienceItem[]>();
@@ -153,6 +217,7 @@ export default function App() {
     { key: "profile", label: "기본 정보", icon: UserRound },
     { key: "company", label: "회사 추가", icon: Building2 },
     { key: "experience", label: "수행 업무 추가", icon: BriefcaseBusiness },
+    { key: "visit-log", label: "방문 로그", icon: Eye },
   ] as const;
 
   const resetExperienceForm = () => {
@@ -471,6 +536,39 @@ export default function App() {
                   {isPublicResumeMode ? "편집 로그아웃" : "로그아웃"}
                 </Button>
               ) : null}
+              <div className="relative">
+                <Button
+                  className={`${headerButtonClass} w-full border border-slate-200 bg-white text-slate-700 md:w-auto`}
+                  onClick={() => setIsSettingsOpen((prev) => !prev)}
+                >
+                  <Settings2 className="mr-2 h-4 w-4" />
+                  설정
+                </Button>
+                {isSettingsOpen ? (
+                  <div className="absolute right-0 top-full z-40 mt-2 w-72 rounded-[12px] border border-slate-200 bg-white p-3 shadow-[0_20px_50px_rgba(15,23,42,0.15)]">
+                    <div className="space-y-2">
+                      <div>
+                        <p className="text-[13px] font-semibold leading-5 text-slate-900">폰트</p>
+                        <p className="text-[12px] leading-4 text-slate-500">자주 쓰는 한국어 계열 폰트 중에서 선택합니다.</p>
+                      </div>
+                      <select
+                        className="w-full rounded-[10px] border border-slate-200 bg-white px-3 py-2 text-[13px] leading-5 text-slate-700 outline-none"
+                        value={fontFamily}
+                        onChange={(event) => setFontFamily(event.target.value)}
+                      >
+                        {FONT_OPTIONS.map((option) => (
+                          <option key={option.value} value={option.value}>
+                            {option.label}
+                          </option>
+                        ))}
+                      </select>
+                      <p className="text-[11px] leading-4 text-slate-500">
+                        선택값은 이 브라우저에 저장됩니다. 설치되지 않은 폰트는 다음 대체 폰트로 표시됩니다.
+                      </p>
+                    </div>
+                  </div>
+                ) : null}
+              </div>
             </div>
           </CardContent>
         </Card>
@@ -612,6 +710,7 @@ export default function App() {
                       onUploadImage={uploadExperienceImage}
                     />
                   ) : null}
+                  {selectedEditorSection === "visit-log" ? <VisitLogPanel logs={visitLogs} /> : null}
                 </div>
               </div>
             </div>
@@ -672,6 +771,52 @@ function AdminWorkspacePanel({
   );
 }
 
+function VisitLogPanel({ logs }: { logs: VisitLogItem[] }) {
+  return (
+    <Card className="rounded-[10px] border border-slate-200 bg-white shadow-sm screen-only">
+      <CardContent className="space-y-3 p-3.5 sm:p-4">
+        <div>
+          <h2 className="text-base font-semibold leading-6">방문 로그</h2>
+          <p className="text-[13px] leading-5 text-slate-500">이 브라우저에서 기록된 방문 이력을 확인합니다.</p>
+        </div>
+
+        <div className="overflow-hidden rounded-[12px] border border-slate-200">
+          <table className="w-full border-collapse text-center text-[13px] leading-5">
+            <thead className="bg-slate-50">
+              <tr className="text-slate-500">
+                <th className="border-b border-slate-200 px-3 py-2 font-bold">방문 시각</th>
+                <th className="border-b border-slate-200 px-3 py-2 font-bold">모드</th>
+                <th className="border-b border-slate-200 px-3 py-2 font-bold">사용자</th>
+                <th className="border-b border-slate-200 px-3 py-2 font-bold">대상</th>
+                <th className="border-b border-slate-200 px-3 py-2 font-bold">IP</th>
+              </tr>
+            </thead>
+            <tbody>
+              {logs.length ? (
+                logs.map((log) => (
+                  <tr key={log.id} className="align-top">
+                    <td className="border-b border-slate-100 px-3 py-2 text-slate-700">{formatVisitAt(log.visitedAt)}</td>
+                    <td className="border-b border-slate-100 px-3 py-2 text-slate-700">{log.mode}</td>
+                    <td className="border-b border-slate-100 px-3 py-2 text-slate-700">{log.userLabel}</td>
+                    <td className="border-b border-slate-100 px-3 py-2 text-slate-700">{log.ownerName}</td>
+                    <td className="border-b border-slate-100 px-3 py-2 text-slate-500">{log.ipAddress ?? "-"}</td>
+                  </tr>
+                ))
+              ) : (
+                <tr>
+                  <td className="px-3 py-4 text-slate-500" colSpan={5}>
+                    아직 방문 로그가 없습니다.
+                  </td>
+                </tr>
+              )}
+            </tbody>
+          </table>
+        </div>
+      </CardContent>
+    </Card>
+  );
+}
+
 function formatUpdatedAt(value: string) {
   const date = new Date(value);
   if (Number.isNaN(date.getTime())) return value;
@@ -684,6 +829,54 @@ function formatUpdatedAt(value: string) {
   }).format(date);
 }
 
+function formatVisitAt(value: string) {
+  const date = new Date(value);
+  if (Number.isNaN(date.getTime())) return value;
+
+  return new Intl.DateTimeFormat("ko-KR", {
+    year: "numeric",
+    month: "2-digit",
+    day: "2-digit",
+    hour: "2-digit",
+    minute: "2-digit",
+  }).format(date);
+}
+
+function createVisitLogEntry({
+  ownerName,
+  isPublicResumeMode,
+  userName,
+  userEmail,
+}: {
+  ownerName: string;
+  isPublicResumeMode: boolean;
+  userName: string;
+  userEmail: string;
+}): VisitLogItem {
+  return {
+    id: `${Date.now()}-${Math.random().toString(36).slice(2, 8)}`,
+    visitedAt: new Date().toISOString(),
+    mode: isPublicResumeMode ? "공개 보기" : "편집 모드",
+    ownerName: ownerName.trim() || "이력서",
+    userLabel: userName.trim() || userEmail.trim() || "게스트",
+  };
+}
+
+function safeParseVisitLogs(value: string | null): VisitLogItem[] {
+  if (!value) return [];
+
+  try {
+    const parsed = JSON.parse(value) as VisitLogItem[];
+    if (!Array.isArray(parsed)) return [];
+
+    return parsed
+      .filter((item): item is VisitLogItem => Boolean(item && typeof item.id === "string" && typeof item.visitedAt === "string"))
+      .slice(0, 200);
+  } catch {
+    return [];
+  }
+}
+
 
 function getVisitCountKey(ownerId: string) {
   return `resume.visit-count.${ownerId}`;
@@ -691,4 +884,15 @@ function getVisitCountKey(ownerId: string) {
 
 function getVisitSessionKey(ownerId: string) {
   return `resume.visit-count.session.${ownerId}`;
+}
+
+function getVisitLogKey(ownerId: string) {
+  return `resume.visit-log.${ownerId}`;
+}
+
+function getSavedFontFamily() {
+  if (typeof window === "undefined") return FONT_OPTIONS[0].value;
+
+  const saved = window.localStorage.getItem(FONT_STORAGE_KEY);
+  return FONT_OPTIONS.some((option) => option.value === saved) ? (saved as string) : FONT_OPTIONS[0].value;
 }
