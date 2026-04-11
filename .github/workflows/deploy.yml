@@ -33,8 +33,11 @@ jobs:
 
       - name: Build
         env:
+          VITE_ENABLE_SUPABASE: "true"
           VITE_PUBLIC_RESUME_MODE: "true"
           VITE_GOOGLE_CLIENT_ID: ${{ vars.VITE_GOOGLE_CLIENT_ID != '' && vars.VITE_GOOGLE_CLIENT_ID || secrets.VITE_GOOGLE_CLIENT_ID }}
+          VITE_SUPABASE_URL: ${{ vars.VITE_SUPABASE_URL != '' && vars.VITE_SUPABASE_URL || secrets.VITE_SUPABASE_URL }}
+          VITE_SUPABASE_ANON_KEY: ${{ vars.VITE_SUPABASE_ANON_KEY != '' && vars.VITE_SUPABASE_ANON_KEY || secrets.VITE_SUPABASE_ANON_KEY }}
           VITE_EDITOR_EMAILS: "totoriverce@gmail.com"
         run: npm run build
 

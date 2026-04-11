@@ -24,7 +24,6 @@ import type {
   ExperienceValidationErrors,
   ResumeCategory,
   VisitLogItem,
-  WorkspaceSummary,
 } from "@/types/resume";
 
 const DEFAULT_GOOGLE_CLIENT_ID = "924920443826-lo1msns5cgvnh7u1714ikcqj2fq4srji.apps.googleusercontent.com";
@@ -104,7 +103,6 @@ export default function App() {
   const [form, setForm] = useState<ExperienceFormValues>(emptyExperienceForm);
   const [formErrors, setFormErrors] = useState<ExperienceValidationErrors>({});
   const [editingId, setEditingId] = useState<number | null>(null);
-  const [selectedOwnerId, setSelectedOwnerId] = useState<string | null>(null);
   const [selectedEditorSection, setSelectedEditorSection] = useState<"dashboard" | "profile" | "company" | "experience" | "visit-log" | "settings">("dashboard");
   const [isUploadingProfilePhoto, setIsUploadingProfilePhoto] = useState(false);
   const [isUploadingExperienceImage, setIsUploadingExperienceImage] = useState(false);
@@ -113,7 +111,7 @@ export default function App() {
   const [visitLogs, setVisitLogs] = useState<VisitLogItem[]>([]);
   const [fontFamily, setFontFamily] = useState<string>(() => getSavedFontFamily());
   const visitOwnerRef = useRef<string | null>(null);
-  const activeOwnerId = isPublicResumeMode ? primaryWorkspaceId : isAdmin ? selectedOwnerId ?? currentWorkspaceId : currentWorkspaceId;
+  const activeOwnerId = isPublicResumeMode ? primaryWorkspaceId : currentWorkspaceId;
   const effectiveIsEditMode = canEdit && isEditMode;
   const canSaveWorkspace = canEdit;
   const fallbackOwnerIds = useMemo(() => (user ? [user.sub, "public-resume"] : ["public-resume"]), [user]);
@@ -131,7 +129,6 @@ export default function App() {
     showSavedNotice,
     storageMode,
     resetWorkspace,
-    listWorkspaces,
   } = useResumeWorkspace({
     ownerId: activeOwnerId,
     fallbackOwnerIds,
@@ -140,20 +137,8 @@ export default function App() {
     defaultExperiences,
     canSave: canSaveWorkspace,
   });
-  const [workspaceSummaries, setWorkspaceSummaries] = useState<WorkspaceSummary[]>([]);
   const headerButtonClass = "min-h-7 px-2.5 py-0.5 text-[10px] leading-4 md:text-[11px]";
   const mobileHeaderChipClass = "h-7 shrink-0 whitespace-nowrap rounded-[9px] border px-2 py-0 text-[10px] leading-4";
-
-  useEffect(() => {
-    if (isPublicResumeMode) return;
-    if (!user) return;
-    setSelectedOwnerId(currentWorkspaceId);
-  }, [currentWorkspaceId, isPublicResumeMode, user]);
-
-  useEffect(() => {
-    if (!isAdmin || storageMode !== "local") return;
-    setWorkspaceSummaries(listWorkspaces());
-  }, [experiences, isAdmin, listWorkspaces, profile, storageMode, updatedAt]);
 
   useEffect(() => {
     if (typeof document === "undefined") return;
@@ -604,14 +589,6 @@ export default function App() {
                         </div>
                       </CardContent>
                     </Card>
-                    {isAdmin ? (
-                      <AdminWorkspacePanel
-                        currentUserId={currentWorkspaceId}
-                        activeOwnerId={activeOwnerId}
-                        workspaces={workspaceSummaries}
-                        onSelect={setSelectedOwnerId}
-                      />
-                    ) : null}
                   </>
                 ) : null}
 
@@ -700,56 +677,6 @@ export default function App() {
         </div>
       </div>
     </div>
-  );
-}
-
-function AdminWorkspacePanel({
-  currentUserId,
-  activeOwnerId,
-  workspaces,
-  onSelect,
-}: {
-  currentUserId: string;
-  activeOwnerId: string;
-  workspaces: WorkspaceSummary[];
-  onSelect: (ownerId: string) => void;
-}) {
-  return (
-    <Card className="rounded-[10px] border border-slate-200 bg-white shadow-sm screen-only">
-      <CardContent className="space-y-3 p-3.5 sm:p-4">
-        <div>
-          <h2 className="text-base font-semibold leading-6">관리자 작업공간</h2>
-          <p className="text-[13px] leading-5 text-slate-500">로컬에 저장된 사용자 이력서를 전환해서 볼 수 있습니다.</p>
-        </div>
-
-        <div className="grid gap-2">
-          <Button
-            className={activeOwnerId === currentUserId ? "justify-start border border-slate-900 bg-slate-900 text-white" : "justify-start border border-slate-200 bg-white text-slate-700"}
-            onClick={() => onSelect(currentUserId)}
-          >
-            내 작업공간
-          </Button>
-          {workspaces
-            .filter((workspace) => workspace.ownerId !== currentUserId)
-            .map((workspace) => (
-              <Button
-                key={workspace.ownerId}
-                className={
-                  activeOwnerId === workspace.ownerId
-                    ? "justify-start border border-slate-900 bg-slate-900 text-white"
-                    : "justify-start border border-slate-200 bg-white text-slate-700"
-                }
-                onClick={() => onSelect(workspace.ownerId)}
-              >
-                <span className="truncate">{workspace.name}</span>
-              </Button>
-            ))}
-          {!workspaces.filter((workspace) => workspace.ownerId !== currentUserId).length ? (
-            <p className="text-[12px] leading-4 text-slate-500">아직 같은 브라우저에 저장된 다른 작업공간이 없습니다.</p>
-          ) : null}
-        </div>
-      </CardContent>
-    </Card>
   );
 }
 
