@@ -1,4 +1,4 @@
-import { useEffect, useMemo, useState } from "react";
+import { useEffect, useMemo, useRef, useState } from "react";
 import { BarChart3, Building2, BriefcaseBusiness, Eye, LogOut, Pencil, RotateCcw, Settings2, ShieldAlert, ShieldCheck, UserRound } from "lucide-react";
 import { LoginPage } from "@/components/auth/login-page";
 import { GoogleSignInButton } from "@/components/auth/google-sign-in-button";
@@ -28,8 +28,7 @@ import type {
 } from "@/types/resume";
 
 const DEFAULT_GOOGLE_CLIENT_ID = "924920443826-lo1msns5cgvnh7u1714ikcqj2fq4srji.apps.googleusercontent.com";
-const PRIMARY_ACCOUNT_EMAIL = "totoriverce@gmail.com";
-const PRIMARY_ACCOUNT_WORKSPACE_ID = PRIMARY_ACCOUNT_EMAIL;
+const DEFAULT_PRIMARY_ACCOUNT_EMAIL = "totoriverce@gmail.com";
 const FONT_STORAGE_KEY = "resume.font-family";
 const FONT_OPTIONS = [
   {
@@ -84,14 +83,23 @@ function validateCompany(form: CompanyFormValues): CompanyValidationErrors {
 export default function App() {
   const googleClientId = ((import.meta.env.VITE_GOOGLE_CLIENT_ID as string | undefined)?.trim() || DEFAULT_GOOGLE_CLIENT_ID).trim();
   const isPublicResumeMode = ((import.meta.env.VITE_PUBLIC_RESUME_MODE as string | undefined) ?? "false") === "true";
+  const adminEmails = parseEnvEmailList(import.meta.env.VITE_ADMIN_EMAILS as string | undefined);
+  const editorEmails = parseEnvEmailList(import.meta.env.VITE_EDITOR_EMAILS as string | undefined);
+  const primaryAccountEmail = (editorEmails[0] ?? adminEmails[0] ?? DEFAULT_PRIMARY_ACCOUNT_EMAIL).toLowerCase();
+  const primaryWorkspaceId = primaryAccountEmail;
+  const allowedEmails = isPublicResumeMode ? editorEmails : adminEmails;
+  const deniedMessage = allowedEmails.length > 0 ? `${allowedEmails.join(", ")}만 로그인 가능합니다.` : "허용된 계정만 로그인 가능합니다.";
+  const isLocalEditorMode = !isPublicResumeMode;
   const { user, isReady, error: authError, signIn, signOut } = useGoogleAuth({
-    allowedEmails: [PRIMARY_ACCOUNT_EMAIL],
-    deniedMessage: `${PRIMARY_ACCOUNT_EMAIL}만 로그인 가능합니다.`,
+    allowedEmails,
+    deniedMessage,
+    enabled: !isLocalEditorMode,
   });
-  const isPrimaryAccount = user ? user.email.toLowerCase() === PRIMARY_ACCOUNT_EMAIL : false;
-  const isAdmin = !isPublicResumeMode && isPrimaryAccount;
-  const isPublicEditor = isPublicResumeMode && isPrimaryAccount;
-  const hasAppAccess = user ? (isPublicResumeMode ? isPublicEditor : isAdmin) : false;
+  const normalizedUserEmail = user?.email.toLowerCase() ?? null;
+  const currentWorkspaceId = normalizedUserEmail ?? primaryWorkspaceId;
+  const isAdmin = isLocalEditorMode || (Boolean(user) && (adminEmails.length === 0 || adminEmails.includes(normalizedUserEmail!)));
+  const isPublicEditor = isPublicResumeMode && Boolean(user) && editorEmails.includes(normalizedUserEmail!);
+  const hasAppAccess = isLocalEditorMode || (user ? isPublicEditor : false);
   const [isEditMode, setIsEditMode] = useState(true);
   const [companyForm, setCompanyForm] = useState<CompanyFormValues>(emptyCompanyForm);
   const [companyErrors, setCompanyErrors] = useState<CompanyValidationErrors>({});
@@ -107,9 +115,11 @@ export default function App() {
   const [visitCount, setVisitCount] = useState(0);
   const [visitLogs, setVisitLogs] = useState<VisitLogItem[]>([]);
   const [fontFamily, setFontFamily] = useState<string>(() => getSavedFontFamily());
-  const activeOwnerId = isPublicResumeMode ? PRIMARY_ACCOUNT_WORKSPACE_ID : isAdmin ? selectedOwnerId ?? PRIMARY_ACCOUNT_WORKSPACE_ID : PRIMARY_ACCOUNT_WORKSPACE_ID;
+  const visitOwnerRef = useRef<string | null>(null);
+  const activeOwnerId = isPublicResumeMode ? primaryWorkspaceId : isAdmin ? selectedOwnerId ?? currentWorkspaceId : currentWorkspaceId;
   const effectiveIsEditMode = isPublicResumeMode ? isPublicEditor && isEditMode : isEditMode;
   const canSaveWorkspace = !isPublicResumeMode || isPublicEditor;
+  const fallbackOwnerIds = useMemo(() => (user ? [user.sub, "public-resume"] : ["public-resume"]), [user]);
   const {
     profile,
     setProfile,
@@ -127,7 +137,7 @@ export default function App() {
     listWorkspaces,
   } = useResumeWorkspace({
     ownerId: activeOwnerId,
-    fallbackOwnerIds: user ? [user.sub, "public-resume"] : ["public-resume"],
+    fallbackOwnerIds,
     defaultProfile,
     defaultCompanies: defaultCompanyProfiles,
     defaultExperiences,
@@ -139,8 +149,8 @@ export default function App() {
   useEffect(() => {
     if (isPublicResumeMode) return;
     if (!user) return;
-    setSelectedOwnerId(PRIMARY_ACCOUNT_WORKSPACE_ID);
-  }, [isPublicResumeMode, user]);
+    setSelectedOwnerId(currentWorkspaceId);
+  }, [currentWorkspaceId, isPublicResumeMode, user]);
 
   useEffect(() => {
     if (!isAdmin || storageMode !== "local") return;
@@ -157,13 +167,13 @@ export default function App() {
 
   useEffect(() => {
     if (isLoading || !activeOwnerId || typeof window === "undefined") {
+      visitOwnerRef.current = null;
       setVisitCount(0);
       setVisitLogs([]);
       return;
     }
 
     const countKey = getVisitCountKey(activeOwnerId);
-    const sessionKey = getVisitSessionKey(activeOwnerId);
     const logKey = getVisitLogKey(activeOwnerId);
     const raw = window.localStorage.getItem(countKey);
     const currentCount = raw ? Number.parseInt(raw, 10) : 0;
@@ -174,28 +184,32 @@ export default function App() {
     setVisitCount(safeCount);
     setVisitLogs(parsedLogs);
 
-    if (!window.sessionStorage.getItem(sessionKey)) {
-      const nextCount = safeCount + 1;
-      window.localStorage.setItem(countKey, String(nextCount));
-      window.sessionStorage.setItem(sessionKey, "1");
-      setVisitCount(nextCount);
-
-      const nextLog = createVisitLogEntry({
-        ownerName: profile.name,
-        isPublicResumeMode,
-        userName: user?.name ?? "게스트",
-        userEmail: user?.email ?? "",
-      });
-      const nextLogs = [nextLog, ...parsedLogs].slice(0, 200);
-      window.localStorage.setItem(logKey, JSON.stringify(nextLogs));
-      setVisitLogs(nextLogs);
+    if (visitOwnerRef.current === activeOwnerId) {
+      return;
     }
-  }, [activeOwnerId, isLoading, isPublicResumeMode, profile.name, user?.email, user?.name]);
+
+    visitOwnerRef.current = activeOwnerId;
+
+    const nextCount = safeCount + 1;
+    window.localStorage.setItem(countKey, String(nextCount));
+    setVisitCount(nextCount);
+
+    const nextLog = createVisitLogEntry({
+      ownerName: profile.name,
+      isPublicResumeMode,
+      userName: user?.name ?? "게스트",
+      userEmail: user?.email ?? "",
+    });
+    const nextLogs = [nextLog, ...parsedLogs].slice(0, 200);
+    window.localStorage.setItem(logKey, JSON.stringify(nextLogs));
+    setVisitLogs(nextLogs);
+  }, [activeOwnerId, isLoading, isPublicResumeMode]);
 
   useEffect(() => {
+    if (isLocalEditorMode) return;
     if (!user || hasAppAccess) return;
     void signOut();
-  }, [hasAppAccess, signOut, user]);
+  }, [hasAppAccess, isLocalEditorMode, signOut, user]);
 
   const groupedExperiences = useMemo(() => {
     const groups = new Map<ResumeCategory, ExperienceItem[]>();
@@ -436,16 +450,12 @@ export default function App() {
     }
   };
 
-  if (!isPublicResumeMode && !user) {
-    return <LoginPage clientId={googleClientId} isReady={isReady} error={authError} onLogin={signIn} />;
-  }
-
   if (user && !hasAppAccess) {
     return (
       <LoginPage
         clientId={googleClientId}
         isReady={isReady}
-        error="totoriverce@gmail.com만 로그인 가능합니다."
+        error={deniedMessage}
         onLogin={signIn}
       />
     );
@@ -470,13 +480,20 @@ export default function App() {
             <div className="grid w-full gap-1 md:flex md:w-auto md:flex-wrap">
               {!isPublicResumeMode ? (
                 <>
-                  <div className="flex w-full items-center gap-2 rounded-[10px] border border-slate-200 bg-slate-50 px-2.5 py-1 md:w-auto">
-                    {user?.picture ? <img src={user.picture} alt={user.name} className="h-8 w-8 rounded-full" referrerPolicy="no-referrer" /> : null}
-                    <div className="min-w-0 text-left">
-                      <p className="truncate text-[13px] font-medium leading-4 text-slate-900">{user?.name}</p>
-                      <p className="truncate text-[12px] leading-3 text-slate-500">{user?.email}</p>
+                  {user ? (
+                    <div className="flex w-full items-center gap-2 rounded-[10px] border border-slate-200 bg-slate-50 px-2.5 py-1 md:w-auto">
+                      {user.picture ? <img src={user.picture} alt={user.name} className="h-8 w-8 rounded-full" referrerPolicy="no-referrer" /> : null}
+                      <div className="min-w-0 text-left">
+                        <p className="truncate text-[13px] font-medium leading-4 text-slate-900">{user.name}</p>
+                        <p className="truncate text-[12px] leading-3 text-slate-500">{user.email}</p>
+                      </div>
                     </div>
-                  </div>
+                  ) : (
+                    <div className="flex w-full items-center gap-2 rounded-[10px] border border-slate-200 bg-slate-50 px-2.5 py-1 text-[12px] font-medium leading-4 text-slate-600 md:w-auto">
+                      <ShieldCheck className="h-4 w-4 text-emerald-600" />
+                      로컬 편집 모드
+                    </div>
+                  )}
                   {isAdmin ? (
                     <div className="flex w-full items-center gap-2 rounded-[10px] border border-emerald-200 bg-emerald-50 px-2.5 py-1 text-[12px] font-medium leading-4 text-emerald-700 md:w-auto">
                       <ShieldCheck className="h-4 w-4" />
@@ -487,7 +504,7 @@ export default function App() {
               ) : (
                 <>
                   <div className="flex w-full min-w-[180px] items-center gap-2 rounded-[10px] border border-slate-200 bg-slate-50 px-2.5 py-1 text-[12px] font-medium leading-4 text-slate-600 md:w-auto">
-                    방문 회수: {visitCount}
+                    방문 횟수: {visitCount}
                   </div>
                   {user ? (
                     <div className="flex w-full items-center gap-2 rounded-[10px] border border-slate-200 bg-slate-50 px-2.5 py-1 md:w-auto">
@@ -546,7 +563,7 @@ export default function App() {
                   ) : null}
                 </>
               ) : null}
-              {!isPublicResumeMode || user ? (
+              {user ? (
                 <Button className={`${headerButtonClass} w-full border border-slate-200 bg-white text-slate-700 md:w-auto`} onClick={signOut}>
                   <LogOut className="mr-2 h-4 w-4" />
                   {isPublicResumeMode ? "편집 로그아웃" : "로그아웃"}
@@ -559,7 +576,7 @@ export default function App() {
         <div className="min-h-0 flex-1 overflow-y-auto overscroll-contain pr-1">
           <div className="space-y-4 md:space-y-5 pb-4">
             <div className={`grid gap-4 pt-1 md:gap-5 ${effectiveIsEditMode ? "xl:grid-cols-[200px_minmax(0,1fr)]" : "grid-cols-1"}`}>
-              {effectiveIsEditMode && user ? (
+              {effectiveIsEditMode && (user || isLocalEditorMode) ? (
                 <div className="screen-only">
                   <Card className="rounded-[10px] border border-slate-200 bg-white shadow-sm">
                     <CardContent className="flex flex-col items-start gap-3 p-2.5 sm:p-3">
@@ -608,7 +625,7 @@ export default function App() {
                     </Card>
                     {isAdmin ? (
                       <AdminWorkspacePanel
-                        currentUserId={PRIMARY_ACCOUNT_WORKSPACE_ID}
+                        currentUserId={currentWorkspaceId}
                         activeOwnerId={activeOwnerId}
                         workspaces={workspaceSummaries}
                         onSelect={setSelectedOwnerId}
@@ -901,10 +918,6 @@ function getVisitCountKey(ownerId: string) {
   return `resume.visit-count.${ownerId}`;
 }
 
-function getVisitSessionKey(ownerId: string) {
-  return `resume.visit-count.session.${ownerId}`;
-}
-
 function getVisitLogKey(ownerId: string) {
   return `resume.visit-log.${ownerId}`;
 }
@@ -914,4 +927,11 @@ function getSavedFontFamily() {
 
   const saved = window.localStorage.getItem(FONT_STORAGE_KEY);
   return FONT_OPTIONS.some((option) => option.value === saved) ? (saved as string) : FONT_OPTIONS[0].value;
+}
+
+function parseEnvEmailList(value?: string) {
+  return (value ?? "")
+    .split(",")
+    .map((item) => item.trim().toLowerCase())
+    .filter(Boolean);
 }

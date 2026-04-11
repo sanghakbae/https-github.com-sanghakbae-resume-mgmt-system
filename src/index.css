@@ -25,51 +25,41 @@
   }
 }
 
-.resume-tag-cloud {
-  position: relative;
+.resume-skill-shield {
   display: flex;
-  width: min(100%, 280px);
-  aspect-ratio: 1 / 1;
-  min-height: 280px;
+  width: 100%;
+  height: 100%;
   margin: 0 auto;
   align-items: center;
   justify-content: center;
-  overflow: hidden;
-  padding: 10px;
-  perspective: 1000px;
-  perspective-origin: center;
+  padding: 6px 0 0;
+  perspective: 1400px;
 }
 
-.resume-tag-cloud__orbit-layer {
-  position: absolute;
-  inset: 0;
-  transform-style: preserve-3d;
-  transform-origin: 50% 50%;
-  animation: resume-tag-cloud-rotate-y 22s linear infinite;
+.resume-skill-shield__frame {
+  display: flex;
+  width: min(100%, 560px);
+  height: 100%;
+  flex-wrap: wrap;
+  align-items: center;
+  justify-content: center;
+  align-content: center;
+  gap: 14px 14px;
+  padding: 14px 8px 10px;
+  transform-origin: center center;
+  animation: resume-skill-shield-sway 28s ease-in-out infinite alternate;
 }
 
-.resume-tag-cloud__item {
-  position: absolute;
-}
-
-.resume-tag-cloud__item--center {
-  transform: translate(-50%, -50%);
-}
-
-.resume-tag-cloud__item--orbit {
-  transform: translate(-50%, -50%);
-}
-
-.resume-tag-cloud__text {
-  display: inline-block;
-  line-height: 1.1;
+.resume-skill-shield__item {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  line-height: 1.22;
   white-space: nowrap;
-  letter-spacing: -0.02em;
-  transform-style: preserve-3d;
-  backface-visibility: hidden;
+  text-shadow: 0 4px 10px rgba(255, 255, 255, 0.72);
 }
 
-@keyframes resume-tag-cloud-rotate-y {
+@keyframes resume-skill-shield-sway {
   from {
     transform: rotateY(-180deg);
   }
@@ -80,9 +70,10 @@
 }
 
 @media (max-width: 768px) {
-  .resume-tag-cloud {
-    width: min(100%, 240px);
-    min-height: 240px;
+  .resume-skill-shield__frame {
+    width: min(100%, 100%);
+    gap: 10px 10px;
+    padding: 10px 4px 6px;
   }
 }
 
@@ -123,5 +114,10 @@
   .resume-app .shadow-sm,
   .resume-app [class*="shadow-"] {
     box-shadow: none !important;
+  }
+
+  .resume-skill-shield__frame {
+    animation: none !important;
+    transform: none !important;
   }
 }

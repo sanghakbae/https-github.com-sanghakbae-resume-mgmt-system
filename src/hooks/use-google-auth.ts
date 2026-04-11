@@ -47,14 +47,21 @@ function injectGoogleScript() {
   });
 }
 
-export function useGoogleAuth(options?: { allowedEmails?: string[]; deniedMessage?: string }) {
+export function useGoogleAuth(options?: { allowedEmails?: string[]; deniedMessage?: string; enabled?: boolean }) {
   const allowedEmails = options?.allowedEmails?.map((value) => value.toLowerCase()) ?? [];
   const deniedMessage = options?.deniedMessage ?? "관리자 계정만 로그인 가능합니다.";
+  const enabled = options?.enabled ?? true;
   const [user, setUser] = useState<GoogleUser | null>(() => readStoredSession());
-  const [isReady, setIsReady] = useState(false);
+  const [isReady, setIsReady] = useState(!enabled);
   const [error, setError] = useState<string | null>(null);
 
   useEffect(() => {
+    if (!enabled) {
+      setIsReady(true);
+      setError(null);
+      return;
+    }
+
     let mounted = true;
 
     injectGoogleScript()
@@ -70,7 +77,7 @@ export function useGoogleAuth(options?: { allowedEmails?: string[]; deniedMessag
     return () => {
       mounted = false;
     };
-  }, []);
+  }, [enabled]);
 
   useEffect(() => {
     if (!isSupabaseConfigured || !supabase) {

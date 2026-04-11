@@ -299,8 +299,8 @@ export function CareerDashboard({
           <DashboardStat icon={Sparkles} label="주요 태그" value={`${topKeywords.length}개`} tone="from-emerald-700 via-teal-600 to-lime-500" />
         </div>
 
-        <div className="mt-5 grid gap-4 items-stretch xl:grid-cols-[0.58fr_1.42fr]" data-export-dashboard-lower data-export-dashboard-panels>
-          <div className="h-full p-1" data-export-role-timeline>
+        <div className="mt-5 grid gap-4 items-stretch xl:grid-cols-[minmax(220px,max-content)_minmax(0,1fr)_minmax(260px,max-content)]" data-export-dashboard-lower data-export-dashboard-panels>
+          <div className="h-full p-1 xl:max-w-[320px]" data-export-role-timeline>
             <AccentPanel icon={TrendingUp} title="역할 변화 타임라인">
               <div className="flex h-full flex-col justify-between space-y-3">
                 {roleTimeline.slice(0, 4).map((item) => (
@@ -317,107 +317,53 @@ export function CareerDashboard({
             </AccentPanel>
           </div>
 
-          <div className="space-y-4">
-            <div className="grid gap-4 items-stretch lg:grid-cols-[1fr_1fr]" data-export-dashboard-secondary>
-              <div className="h-full p-1" data-export-tag-distribution>
-                <p className="text-center text-sm font-semibold text-slate-900">핵심 역량 분포</p>
-                <div className="resume-tag-cloud mt-4 flex flex-1 justify-center">
-                  {tagDistribution.length ? (
-                    <div className="resume-tag-cloud__orbit-layer mx-auto">
-                      {tagDistribution.slice(0, 1).map(([tag, count]) => {
-                        const strongestCount = Math.max(tagDistribution[0]?.[1] ?? 1, 1);
-                        const emphasis = count / strongestCount;
-                        const cloudPosition = getTagCloudPosition(0, tagDistribution.length);
-                        const fontSize = 15 + Math.round(emphasis * 16);
+          <div className="flex h-full min-w-0 flex-col p-1" data-export-tag-distribution>
+            <p className="text-center text-sm font-semibold text-slate-900">핵심 역량 분포</p>
+            <div className="resume-skill-shield mt-2 flex flex-1 justify-center">
+              {tagDistribution.length ? (
+                <div className="resume-skill-shield__frame mx-auto">
+                  {tagDistribution.slice(0, 28).map(([tag, count], index) => {
+                    const strongestCount = Math.max(tagDistribution[0]?.[1] ?? 1, 1);
+                    const emphasis = count / strongestCount;
+                    const fontSize = index === 0 ? 20 + Math.round(emphasis * 8) : 12 + Math.round(emphasis * 5);
+                    const palette = ["#1d4ed8", "#2563eb", "#3b82f6", "#1e40af", "#60a5fa", "#0f172a"];
 
-                        return (
-                          <span
-                            key={tag}
-                            className="resume-tag-cloud__item resume-tag-cloud__item--center"
-                            style={{
-                              left: `${cloudPosition.x}%`,
-                              top: `${cloudPosition.y}%`,
-                              fontSize: `${fontSize}px`,
-                              zIndex: 20,
-                            }}
-                          >
-                            <span
-                              className="resume-tag-cloud__text"
-                              style={{
-                                color: "#0f172a",
-                                opacity: 0.95,
-                                textShadow: "0 8px 18px rgba(255,255,255,0.78)",
-                                transform: "translateZ(20px)",
-                              }}
-                            >
-                              <span className="font-semibold">{tag}</span>
-                            </span>
-                          </span>
-                        );
-                      })}
-                      {tagDistribution.slice(1).map(([tag, count], index) => {
-                        const strongestCount = Math.max(tagDistribution[0]?.[1] ?? 1, 1);
-                        const emphasis = count / strongestCount;
-                        const cloudPosition = getTagCloudPosition(index + 1, tagDistribution.length);
-                        const fontSize = 15 + Math.round(emphasis * 16);
-                        const palette = [
-                          "#0f766e",
-                          "#1d4ed8",
-                          "#7c3aed",
-                          "#be123c",
-                          "#b45309",
-                          "#166534",
-                          "#334155",
-                        ];
-
-                        return (
-                          <span
-                            key={tag}
-                            className="resume-tag-cloud__item resume-tag-cloud__item--orbit"
-                            style={{
-                              left: `${cloudPosition.x}%`,
-                              top: `${cloudPosition.y}%`,
-                              fontSize: `${fontSize}px`,
-                              zIndex: 10 + index,
-                              ["--tag-rotate" as string]: `${cloudPosition.rotate}deg`,
-                            }}
-                          >
-                            <span
-                              className="resume-tag-cloud__text"
-                              style={{
-                                transform: `rotate(${cloudPosition.rotate}deg) translateZ(${8 + Math.round(emphasis * 10)}px)`,
-                                color: palette[index % palette.length],
-                                opacity: 0.58 + emphasis * 0.42,
-                                textShadow: "0 8px 18px rgba(255,255,255,0.78)",
-                              }}
-                            >
-                              <span className={index < 2 ? "font-semibold" : "font-medium"}>{tag}</span>
-                            </span>
-                          </span>
-                        );
-                      })}
-                    </div>
-                  ) : (
-                    <p className="text-[13px] leading-5 text-slate-500">프로젝트를 등록하면 설명 기반 자동 태그로 역량 분포가 표시됩니다.</p>
-                  )}
+                    return (
+                      <span
+                        key={tag}
+                        className="resume-skill-shield__item"
+                        style={{
+                          fontSize: `${fontSize}px`,
+                          color: palette[index % palette.length],
+                          opacity: index === 0 ? 0.96 : 0.72 + emphasis * 0.18,
+                          fontWeight: index === 0 ? 700 : index < 6 ? 600 : 500,
+                          letterSpacing: index === 0 ? "-0.05em" : "-0.03em",
+                        }}
+                      >
+                        {tag}
+                      </span>
+                    );
+                  })}
                 </div>
-              </div>
-
-              <div className="h-full p-1" data-export-highlight-projects>
-              <AccentPanel icon={Target} title="대표 성과 하이라이트">
-                <div className="flex h-full flex-col space-y-2.5">
-                  {highlightProjects.map((item) => (
-                    <div key={item.id} className="rounded-[12px] border border-slate-200 bg-white px-3 py-2.5">
-                      <p className="text-[13px] font-medium leading-5 text-slate-900">{item.title}</p>
-                      <p className="mt-1 text-[12px] leading-4 text-slate-500">
-                        {item.organization} · {item.period}
-                      </p>
-                    </div>
-                  ))}
-                </div>
-              </AccentPanel>
-              </div>
+              ) : (
+                <p className="text-[13px] leading-5 text-slate-500">프로젝트를 등록하면 설명 기반 자동 태그로 역량 분포가 표시됩니다.</p>
+              )}
             </div>
+          </div>
+
+          <div className="h-full p-1 xl:max-w-[360px]" data-export-highlight-projects>
+            <AccentPanel icon={Target} title="대표 성과 하이라이트">
+              <div className="flex h-full flex-col space-y-2.5">
+                {highlightProjects.map((item) => (
+                  <div key={item.id} className="rounded-[12px] border border-slate-200 bg-white px-3 py-2.5">
+                    <p className="text-[13px] font-medium leading-5 text-slate-900">{item.title}</p>
+                    <p className="mt-1 text-[12px] leading-4 text-slate-500">
+                      {item.organization} · {item.period}
+                    </p>
+                  </div>
+                ))}
+              </div>
+            </AccentPanel>
           </div>
         </div>
       </div>
@@ -496,38 +442,6 @@ function normalizeHighlightKeyword(keyword: string) {
   if (lower.includes("개인정보")) return "개인정보보호";
 
   return trimmed;
-}
-
-function getTagCloudPosition(index: number, total: number) {
-  const presets = [
-    { x: 50, y: 50, rotate: 0 },
-    { x: 50, y: 34, rotate: -6 },
-    { x: 38, y: 39, rotate: 8 },
-    { x: 62, y: 39, rotate: -4 },
-    { x: 36, y: 58, rotate: -8 },
-    { x: 64, y: 58, rotate: 7 },
-    { x: 50, y: 69, rotate: -5 },
-    { x: 28, y: 30, rotate: 4 },
-    { x: 72, y: 30, rotate: -3 },
-    { x: 24, y: 47, rotate: 6 },
-    { x: 76, y: 47, rotate: -7 },
-    { x: 30, y: 72, rotate: 4 },
-    { x: 70, y: 72, rotate: -4 },
-    { x: 50, y: 24, rotate: 3 },
-    { x: 50, y: 78, rotate: -2 },
-  ];
-
-  if (index < presets.length) {
-    return presets[index];
-  }
-
-  const angle = (Math.PI * 2 * index) / Math.max(total, 1);
-  const radius = 18 + (index % 5) * 6;
-  return {
-    x: 50 + Math.cos(angle) * radius,
-    y: 50 + Math.sin(angle) * radius,
-    rotate: ((index % 5) - 2) * 4,
-  };
 }
 
 function formatCareerRange(value: string) {
