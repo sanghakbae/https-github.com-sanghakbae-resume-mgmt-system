@@ -442,7 +442,7 @@ export default function App() {
   };
 
   return (
-    <div className="resume-app h-screen overflow-hidden bg-slate-100 px-3 py-4 sm:px-4 md:px-6 md:py-6">
+    <div className="resume-app min-h-[100dvh] overflow-x-hidden bg-slate-100 px-2 py-2 sm:px-4 md:px-6 md:py-6 lg:h-[100dvh] lg:overflow-hidden">
       {showSavedNotice ? (
         <div className="pointer-events-none fixed inset-0 z-50 flex items-center justify-center px-4 screen-only">
           <div className="rounded-[16px] border border-emerald-200 bg-white/95 px-6 py-4 text-center shadow-[0_24px_80px_rgba(15,23,42,0.18)] backdrop-blur">
@@ -450,7 +450,7 @@ export default function App() {
           </div>
         </div>
       ) : null}
-      <div className="flex h-full flex-col gap-3 md:gap-5">
+      <div className="flex h-full flex-col gap-2 md:gap-5">
         <Card className="z-30 shrink-0 rounded-[10px] border border-slate-200 bg-white/95 shadow-sm backdrop-blur screen-only">
           <CardContent className="flex flex-col gap-2.5 p-2.5 sm:p-3 md:flex-row md:items-center md:justify-between">
             <div>
@@ -553,8 +553,8 @@ export default function App() {
           </CardContent>
         </Card>
 
-        <div className="min-h-0 flex-1 overflow-y-auto overscroll-contain pr-1">
-          <div className="space-y-4 md:space-y-5 pb-4">
+        <div className="min-h-0 flex-1 overflow-y-auto overscroll-contain pr-0 sm:pr-1">
+          <div className="space-y-3 pb-3 md:space-y-5 md:pb-4">
             <div className={`grid gap-4 pt-1 md:gap-5 ${effectiveIsEditMode ? "xl:grid-cols-[200px_minmax(0,1fr)]" : "grid-cols-1"}`}>
               {effectiveIsEditMode ? (
                 <div className="screen-only">
@@ -761,8 +761,8 @@ function VisitLogPanel({ logs }: { logs: VisitLogItem[] }) {
           <p className="text-[13px] leading-5 text-slate-500">이 브라우저에서 기록된 방문 이력을 확인합니다.</p>
         </div>
 
-        <div className="overflow-hidden rounded-[12px] border border-slate-200">
-          <table className="w-full border-collapse text-center text-[13px] leading-5">
+        <div className="overflow-x-auto rounded-[12px] border border-slate-200">
+          <table className="min-w-[640px] w-full border-collapse text-center text-[13px] leading-5">
             <thead className="bg-slate-50">
               <tr className="text-slate-500">
                 <th className="border-b border-slate-200 px-3 py-2 font-bold">방문 시각</th>

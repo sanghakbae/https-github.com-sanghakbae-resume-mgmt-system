@@ -33,13 +33,13 @@ export function ResumePreview({
 
   return (
     <Card className="rounded-[10px] border border-slate-200 bg-white shadow-sm" data-export-resume>
-      <CardContent className="p-3.5 sm:p-4 md:p-5" data-export-resume-content>
+      <CardContent className="p-2.5 sm:p-4 md:p-5" data-export-resume-content>
         <div
-          className={`border-b border-slate-200 pb-5 ${isCompactHeader ? "grid gap-4 md:grid-cols-[140px_minmax(0,1fr)] md:items-start" : "flex flex-col gap-5 lg:flex-row lg:items-start lg:justify-between"}`}
+          className={`border-b border-slate-200 pb-4 sm:pb-5 ${isCompactHeader ? "grid gap-4 sm:grid-cols-[140px_minmax(0,1fr)] sm:items-start" : "flex flex-col gap-4 lg:flex-row lg:items-start lg:justify-between"}`}
           data-export-intro
         >
           <div className={`flex flex-col ${isCompactHeader ? "items-center gap-0.5" : "gap-3"}`}>
-            <div className="flex h-40 w-40 shrink-0 items-center justify-center overflow-hidden rounded-[18px] border border-slate-200 bg-slate-100">
+            <div className="mx-auto flex h-32 w-32 shrink-0 items-center justify-center overflow-hidden rounded-[18px] border border-slate-200 bg-slate-100 sm:mx-0 sm:h-40 sm:w-40">
               {profile.photo ? (
                 <img
                   src={profile.photo}
@@ -58,7 +58,7 @@ export function ResumePreview({
             )}
           </div>
 
-          <div className={`grid items-start ${isCompactHeader ? "w-full gap-3 self-start grid-cols-2" : "gap-3 sm:grid-cols-2"}`}>
+          <div className={`grid items-start ${isCompactHeader ? "w-full gap-2 grid-cols-1 sm:gap-3 sm:grid-cols-2" : "gap-3 grid-cols-1 sm:grid-cols-2"}`}>
             {profileInfoItems.map(({ key, label, icon }) => (
               <InfoBox
                 key={key}
@@ -86,7 +86,7 @@ export function ResumePreview({
                   </div>
                 </div>
                 <p className="text-sm leading-6 text-slate-600">{company.summary}</p>
-                <div className="grid gap-1 md:grid-cols-3">
+                <div className="grid gap-1 sm:grid-cols-2 md:grid-cols-3">
                   {company.responsibilities.map((responsibility) => (
                     <div
                       key={responsibility}
@@ -319,13 +319,13 @@ export function CareerDashboard({
 
           <div className="flex h-full min-w-0 flex-col p-1" data-export-tag-distribution>
             <p className="text-center text-sm font-semibold text-slate-900">핵심 역량 분포</p>
-            <div className="resume-skill-shield mt-2 flex flex-1 justify-center">
+            <div className="resume-skill-shield mt-2 flex min-h-[220px] flex-1 justify-center sm:min-h-[260px]">
               {tagDistribution.length ? (
                 <div className="resume-skill-shield__frame mx-auto">
                   {tagDistribution.slice(0, 28).map(([tag, count], index) => {
                     const strongestCount = Math.max(tagDistribution[0]?.[1] ?? 1, 1);
                     const emphasis = count / strongestCount;
-                    const fontSize = index === 0 ? 20 + Math.round(emphasis * 8) : 12 + Math.round(emphasis * 5);
+                    const fontSize = index === 0 ? 18 + Math.round(emphasis * 6) : 11 + Math.round(emphasis * 4);
                     const palette = ["#1d4ed8", "#2563eb", "#3b82f6", "#1e40af", "#60a5fa", "#0f172a"];
 
                     return (

@@ -70,10 +70,18 @@
 }
 
 @media (max-width: 768px) {
+  .resume-skill-shield {
+    padding-top: 2px;
+  }
+
   .resume-skill-shield__frame {
     width: min(100%, 100%);
-    gap: 10px 10px;
-    padding: 10px 4px 6px;
+    gap: 8px 8px;
+    padding: 8px 2px 4px;
+  }
+
+  .resume-skill-shield__item {
+    line-height: 1.12;
   }
 }
 
