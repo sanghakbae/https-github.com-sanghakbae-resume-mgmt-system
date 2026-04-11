@@ -82,7 +82,6 @@ function validateCompany(form: CompanyFormValues): CompanyValidationErrors {
 export default function App() {
   const googleClientId = ((import.meta.env.VITE_GOOGLE_CLIENT_ID as string | undefined)?.trim() || DEFAULT_GOOGLE_CLIENT_ID).trim();
   const isPublicResumeMode = ((import.meta.env.VITE_PUBLIC_RESUME_MODE as string | undefined) ?? "false") === "true";
-  const { user, isReady, error: authError, signIn, signOut } = useGoogleAuth();
   const adminEmails = ((import.meta.env.VITE_ADMIN_EMAILS as string | undefined) ?? "")
     .split(",")
     .map((value) => value.trim().toLowerCase())
@@ -91,8 +90,13 @@ export default function App() {
     .split(",")
     .map((value) => value.trim().toLowerCase())
     .filter(Boolean);
+  const { user, isReady, error: authError, signIn, signOut } = useGoogleAuth({
+    allowedEmails: adminEmails,
+    deniedMessage: "관리자 계정만 로그인 가능합니다.",
+  });
   const isAdmin = !isPublicResumeMode && user ? adminEmails.includes(user.email.toLowerCase()) : false;
   const isPublicEditor = isPublicResumeMode && user ? editorEmails.includes(user.email.toLowerCase()) : false;
+  const hasAppAccess = user ? (isPublicResumeMode ? isPublicEditor : isAdmin) : false;
   const [isEditMode, setIsEditMode] = useState(true);
   const [companyForm, setCompanyForm] = useState<CompanyFormValues>(emptyCompanyForm);
   const [companyErrors, setCompanyErrors] = useState<CompanyValidationErrors>({});
@@ -101,13 +105,12 @@ export default function App() {
   const [formErrors, setFormErrors] = useState<ExperienceValidationErrors>({});
   const [editingId, setEditingId] = useState<number | null>(null);
   const [selectedOwnerId, setSelectedOwnerId] = useState<string | null>(null);
-  const [selectedEditorSection, setSelectedEditorSection] = useState<"dashboard" | "profile" | "company" | "experience" | "visit-log">("dashboard");
+  const [selectedEditorSection, setSelectedEditorSection] = useState<"dashboard" | "profile" | "company" | "experience" | "visit-log" | "settings">("dashboard");
   const [isUploadingProfilePhoto, setIsUploadingProfilePhoto] = useState(false);
   const [isUploadingExperienceImage, setIsUploadingExperienceImage] = useState(false);
   const [assetUploadError, setAssetUploadError] = useState<string | null>(null);
   const [visitCount, setVisitCount] = useState(0);
   const [visitLogs, setVisitLogs] = useState<VisitLogItem[]>([]);
-  const [isSettingsOpen, setIsSettingsOpen] = useState(false);
   const [fontFamily, setFontFamily] = useState<string>(() => getSavedFontFamily());
   const activeOwnerId = isPublicResumeMode ? "public-resume" : isAdmin ? selectedOwnerId ?? user?.sub ?? "" : user?.sub ?? "";
   const effectiveIsEditMode = isPublicResumeMode ? isPublicEditor && isEditMode : isEditMode;
@@ -193,6 +196,11 @@ export default function App() {
     }
   }, [activeOwnerId, isLoading, isPublicResumeMode, profile.name, user?.email, user?.name]);
 
+  useEffect(() => {
+    if (!user || hasAppAccess) return;
+    void signOut();
+  }, [hasAppAccess, signOut, user]);
+
   const groupedExperiences = useMemo(() => {
     const groups = new Map<ResumeCategory, ExperienceItem[]>();
 
@@ -218,6 +226,7 @@ export default function App() {
     { key: "company", label: "회사 추가", icon: Building2 },
     { key: "experience", label: "수행 업무 추가", icon: BriefcaseBusiness },
     { key: "visit-log", label: "방문 로그", icon: Eye },
+    { key: "settings", label: "설정", icon: Settings2 },
   ] as const;
 
   const resetExperienceForm = () => {
@@ -435,6 +444,17 @@ export default function App() {
     return <LoginPage clientId={googleClientId} isReady={isReady} error={authError} onLogin={signIn} />;
   }
 
+  if (user && !hasAppAccess) {
+    return (
+      <LoginPage
+        clientId={googleClientId}
+        isReady={isReady}
+        error="허용된 계정이 아닙니다. totoriverce@gmail.com 만 사용할 수 있습니다."
+        onLogin={signIn}
+      />
+    );
+  }
+
   return (
     <div className="resume-app h-screen overflow-hidden bg-slate-100 px-3 py-4 sm:px-4 md:px-6 md:py-6">
       {showSavedNotice ? (
@@ -536,39 +556,6 @@ export default function App() {
                   {isPublicResumeMode ? "편집 로그아웃" : "로그아웃"}
                 </Button>
               ) : null}
-              <div className="relative">
-                <Button
-                  className={`${headerButtonClass} w-full border border-slate-200 bg-white text-slate-700 md:w-auto`}
-                  onClick={() => setIsSettingsOpen((prev) => !prev)}
-                >
-                  <Settings2 className="mr-2 h-4 w-4" />
-                  설정
-                </Button>
-                {isSettingsOpen ? (
-                  <div className="absolute right-0 top-full z-40 mt-2 w-72 rounded-[12px] border border-slate-200 bg-white p-3 shadow-[0_20px_50px_rgba(15,23,42,0.15)]">
-                    <div className="space-y-2">
-                      <div>
-                        <p className="text-[13px] font-semibold leading-5 text-slate-900">폰트</p>
-                        <p className="text-[12px] leading-4 text-slate-500">자주 쓰는 한국어 계열 폰트 중에서 선택합니다.</p>
-                      </div>
-                      <select
-                        className="w-full rounded-[10px] border border-slate-200 bg-white px-3 py-2 text-[13px] leading-5 text-slate-700 outline-none"
-                        value={fontFamily}
-                        onChange={(event) => setFontFamily(event.target.value)}
-                      >
-                        {FONT_OPTIONS.map((option) => (
-                          <option key={option.value} value={option.value}>
-                            {option.label}
-                          </option>
-                        ))}
-                      </select>
-                      <p className="text-[11px] leading-4 text-slate-500">
-                        선택값은 이 브라우저에 저장됩니다. 설치되지 않은 폰트는 다음 대체 폰트로 표시됩니다.
-                      </p>
-                    </div>
-                  </div>
-                ) : null}
-              </div>
             </div>
           </CardContent>
         </Card>
@@ -711,6 +698,7 @@ export default function App() {
                     />
                   ) : null}
                   {selectedEditorSection === "visit-log" ? <VisitLogPanel logs={visitLogs} /> : null}
+                  {selectedEditorSection === "settings" ? <SettingsPanel fontFamily={fontFamily} onFontFamilyChange={setFontFamily} /> : null}
                 </div>
               </div>
             </div>
@@ -811,6 +799,41 @@ function VisitLogPanel({ logs }: { logs: VisitLogItem[] }) {
               )}
             </tbody>
           </table>
+        </div>
+      </CardContent>
+    </Card>
+  );
+}
+
+function SettingsPanel({
+  fontFamily,
+  onFontFamilyChange,
+}: {
+  fontFamily: string;
+  onFontFamilyChange: (value: string) => void;
+}) {
+  return (
+    <Card className="rounded-[10px] border border-slate-200 bg-white shadow-sm screen-only">
+      <CardContent className="space-y-3 p-3.5 sm:p-4">
+        <div>
+          <h2 className="text-base font-semibold leading-6">설정</h2>
+          <p className="text-[13px] leading-5 text-slate-500">폰트와 화면 표시 방식을 조정합니다.</p>
+        </div>
+
+        <div className="space-y-2">
+          <label className="text-[13px] font-medium leading-5 text-slate-700">폰트</label>
+          <select
+            className="w-full rounded-[10px] border border-slate-200 bg-white px-3 py-2 text-[13px] leading-5 text-slate-700 outline-none"
+            value={fontFamily}
+            onChange={(event) => onFontFamilyChange(event.target.value)}
+          >
+            {FONT_OPTIONS.map((option) => (
+              <option key={option.value} value={option.value}>
+                {option.label}
+              </option>
+            ))}
+          </select>
+          <p className="text-[11px] leading-4 text-slate-500">선택값은 이 브라우저에 저장됩니다. 설치되지 않은 폰트는 다음 대체 폰트로 표시됩니다.</p>
         </div>
       </CardContent>
     </Card>

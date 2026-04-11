@@ -47,7 +47,9 @@ function injectGoogleScript() {
   });
 }
 
-export function useGoogleAuth() {
+export function useGoogleAuth(options?: { allowedEmails?: string[]; deniedMessage?: string }) {
+  const allowedEmails = options?.allowedEmails?.map((value) => value.toLowerCase()) ?? [];
+  const deniedMessage = options?.deniedMessage ?? "관리자 계정만 로그인 가능합니다.";
   const [user, setUser] = useState<GoogleUser | null>(() => readStoredSession());
   const [isReady, setIsReady] = useState(false);
   const [error, setError] = useState<string | null>(null);
@@ -123,6 +125,18 @@ export function useGoogleAuth() {
   const signIn = async (response: GoogleCredentialResponse) => {
     try {
       const nextUser = parseGoogleCredential(response.credential);
+      const normalizedEmail = nextUser.email.toLowerCase();
+
+      if (allowedEmails.length > 0 && !allowedEmails.includes(normalizedEmail)) {
+        window.alert(deniedMessage);
+        setError(deniedMessage);
+        if (isSupabaseConfigured && supabase) {
+          await supabase.auth.signOut({ scope: "local" }).catch(() => undefined);
+        }
+        window.localStorage.removeItem(SESSION_STORAGE_KEY);
+        setUser(null);
+        return;
+      }
 
       if (isSupabaseConfigured && supabase) {
         const { error: signInError } = await supabase.auth.signInWithIdToken({
