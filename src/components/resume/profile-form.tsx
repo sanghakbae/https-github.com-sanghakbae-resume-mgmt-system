@@ -153,7 +153,7 @@ export function ProfileForm({ ownerId, profile, isUploading = false, onChange, o
                     updateField("photo", "");
                     updateField("photoPositionX", 50);
                     updateField("photoPositionY", 50);
-                    updateField("photoScale", 1);
+                    updateField("photoScale", 1.08);
                   }}
                 >
                   <Trash2 className="mr-2 h-4 w-4" />

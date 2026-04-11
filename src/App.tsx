@@ -403,12 +403,12 @@ export default function App() {
 
       if (!isSupabaseConfigured) {
         const dataUrl = await readFileAsDataUrl(preparedFile);
-        setProfile((prev) => ({ ...prev, photo: dataUrl, photoPositionX: 50, photoPositionY: 50, photoScale: 1 }));
+        setProfile((prev) => ({ ...prev, photo: dataUrl, photoPositionX: 50, photoPositionY: 50, photoScale: 1.08 }));
         return;
       }
 
       const publicUrl = await uploadResumeAsset(preparedFile, activeOwnerId, "profile");
-      setProfile((prev) => ({ ...prev, photo: publicUrl, photoPositionX: 50, photoPositionY: 50, photoScale: 1 }));
+      setProfile((prev) => ({ ...prev, photo: publicUrl, photoPositionX: 50, photoPositionY: 50, photoScale: 1.08 }));
     } catch {
       setAssetUploadError("프로필 사진을 업로드하지 못했습니다. 잠시 후 다시 시도하세요.");
     } finally {

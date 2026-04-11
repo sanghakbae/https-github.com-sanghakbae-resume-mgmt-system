@@ -168,7 +168,7 @@ export const defaultProfile: Profile = {
   photo: "",
   photoPositionX: 50,
   photoPositionY: 50,
-  photoScale: 1,
+  photoScale: 1.08,
   education: "한국산업기술대학교 컴퓨터공학과\n건국대학교 정보통신대학원 정보시스템감리학과(휴학)",
   career: "2007.01 ~ 현재",
   specialty: "ISMS / ISMS-P / ISO 27001 / CSAP / IT·OT 보안 / 모의해킹 / 취약점 진단",
