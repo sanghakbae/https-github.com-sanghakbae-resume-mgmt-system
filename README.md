@@ -32,6 +32,26 @@
 - 비허용 계정은 공개 화면만 볼 수 있고, 편집 버튼과 저장 기능은 비활성화
 - Supabase를 켠 경우에도 저장 정책은 로그인한 이메일과 `editor_email` 일치 여부로 다시 검증
 
+### 개인 사용 방법
+
+- 본인만 편집하려면 `.env`에서 `VITE_PUBLIC_RESUME_MODE=true`를 유지한 뒤 `VITE_EDITOR_EMAILS`에 본인 Google 계정을 넣습니다.
+- 예시
+
+```env
+VITE_PUBLIC_RESUME_MODE=true
+VITE_EDITOR_EMAILS=your.name@gmail.com
+```
+
+- 여러 계정을 허용하려면 쉼표로 구분합니다.
+- 예시
+
+```env
+VITE_EDITOR_EMAILS=your.name@gmail.com,another.account@gmail.com
+```
+
+- 로컬에서 로그인 없이만 쓰고 싶으면 `VITE_PUBLIC_RESUME_MODE=false`로 바꾸면 됩니다.
+- 이 경우에는 브라우저에 저장된 작업공간을 사용하므로, 같은 컴퓨터/브라우저에서 바로 편집할 수 있습니다.
+
 ## 주요 기능
 
 ### 이력서 편집
@@ -143,6 +163,7 @@ VITE_SUPABASE_ANON_KEY=your-supabase-anon-key
   - 현재 공개 모드의 편집 권한에는 사용되지 않음
 - `VITE_EDITOR_EMAILS`
   - 공개 모드에서 편집을 허용할 이메일 목록
+  - 개인 사용 시 본인 Google 이메일을 여기에 넣어야 편집 가능
   - 편집과 저장 권한의 기준
   - Supabase를 쓸 때도 로그인한 이메일과 일치해야 저장 가능
 - `VITE_SUPABASE_URL`
