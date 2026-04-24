@@ -53,7 +53,6 @@ export function ResumePreview({
                 </div>
               )}
             </div>
-            <p className="text-center text-[11px] leading-4 text-slate-500">명함사진</p>
             {isCompactHeader ? null : (
               <h2 className="break-words text-center text-lg font-semibold leading-[1.05] tracking-tight sm:text-xl">{profile.name}</h2>
             )}
@@ -71,7 +70,7 @@ export function ResumePreview({
           </div>
         </div>
 
-        <div className="mt-6 space-y-6">
+        <div className="mt-3 space-y-3 md:mt-6 md:space-y-6">
           {companyGroups.map(({ company, items }) => (
             <section key={company.organization} className="rounded-[18px] border border-slate-200 bg-slate-50/70 p-3.5 sm:p-4" data-export-company>
               <div className="flex flex-col gap-3 border-b border-slate-200 pb-3.5">
@@ -242,12 +241,11 @@ export function CareerDashboard({
             </div>
             <div>
               <h3 className="text-lg font-semibold leading-6 text-slate-950">경력 대시보드</h3>
-              <p className="text-[13px] leading-5 text-slate-500">현재 입력된 수행 업무 기준으로 경력 흐름을 요약합니다.</p>
             </div>
           </div>
         </div>
 
-        <div className="mt-4 grid gap-4 xl:grid-cols-2" data-export-dashboard-upper>
+        <div className="mt-2 grid gap-2 md:mt-4 md:gap-4 xl:grid-cols-2" data-export-dashboard-upper>
           <div className="flex h-full w-full flex-col rounded-[18px] border border-slate-200 bg-[linear-gradient(135deg,#0f172a_0%,#1e293b_52%,#334155_100%)] p-5 text-white shadow-[0_18px_50px_rgba(15,23,42,0.18)]">
             <p className="text-[11px] font-semibold uppercase tracking-[0.24em] text-slate-300">Positioning</p>
             <div className="flex flex-1 flex-col">
@@ -263,7 +261,7 @@ export function CareerDashboard({
             </div>
           </div>
 
-          <div className="grid gap-3">
+          <div className="grid gap-1.5 md:gap-3">
             <AccentPanel icon={ShieldCheck} title="인증 / 컴플라이언스">
               <div className="flex flex-wrap gap-1">
                 {complianceCoverage.map((item) => (
@@ -288,7 +286,7 @@ export function CareerDashboard({
           </div>
         </div>
 
-        <div className="mt-4 grid grid-cols-4 gap-2 md:gap-3" data-export-kpis>
+        <div className="mt-2 grid grid-cols-4 gap-1 md:mt-4 md:gap-3" data-export-kpis>
           <DashboardStat icon={BriefcaseBusiness} label="총 프로젝트" value={`${totalProjects}건`} tone="from-slate-900 via-slate-700 to-slate-500" />
           <DashboardStat icon={Sparkles} label="활성 분야" value={`${activeCategories}개`} tone="from-cyan-700 via-sky-600 to-blue-500" />
           <DashboardStat
@@ -300,8 +298,8 @@ export function CareerDashboard({
           <DashboardStat icon={Sparkles} label="주요 태그" value={`${topKeywords.length}개`} tone="from-emerald-700 via-teal-600 to-lime-500" />
         </div>
 
-        <div className="mt-5 grid gap-4 items-stretch xl:grid-cols-[minmax(220px,max-content)_minmax(0,1fr)_minmax(260px,max-content)]" data-export-dashboard-lower data-export-dashboard-panels>
-          <div className="h-full p-1 xl:max-w-[320px]" data-export-role-timeline>
+        <div className="mt-2.5 grid gap-2 items-stretch md:mt-5 md:gap-4 xl:grid-cols-[minmax(220px,max-content)_minmax(0,1fr)_minmax(260px,max-content)]" data-export-dashboard-lower data-export-dashboard-panels>
+          <div className="h-full p-0.5 md:p-1 xl:max-w-[320px]" data-export-role-timeline>
             <AccentPanel icon={TrendingUp} title="역할 변화 타임라인">
               <div className="flex h-full flex-col justify-between space-y-3">
                 {roleTimeline.slice(0, 4).map((item) => (
@@ -318,9 +316,9 @@ export function CareerDashboard({
             </AccentPanel>
           </div>
 
-          <div className="flex h-full min-w-0 flex-col p-1" data-export-tag-distribution>
+          <div className="flex h-full min-w-0 flex-col p-0.5 md:p-1" data-export-tag-distribution>
             <p className="text-center text-sm font-semibold text-slate-900">핵심 역량 분포</p>
-            <div className="resume-skill-shield mt-2 flex min-h-[220px] flex-1 justify-center sm:min-h-[260px]">
+            <div className="resume-skill-shield mt-1 flex min-h-[110px] flex-1 justify-center sm:min-h-[200px]">
               {tagDistribution.length ? (
                 <div className="resume-skill-shield__frame mx-auto">
                   {tagDistribution.slice(0, 28).map(([tag, count], index) => {
@@ -352,7 +350,7 @@ export function CareerDashboard({
             </div>
           </div>
 
-          <div className="h-full p-1 xl:max-w-[360px]" data-export-highlight-projects>
+          <div className="h-full p-0.5 md:p-1 xl:max-w-[360px]" data-export-highlight-projects>
             <AccentPanel icon={Target} title="대표 성과 하이라이트">
               <div className="flex h-full flex-col space-y-2.5">
                 {highlightProjects.map((item) => (

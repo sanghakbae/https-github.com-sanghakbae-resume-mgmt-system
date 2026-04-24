@@ -434,7 +434,7 @@ export default function App() {
   };
 
   return (
-    <div className="resume-app min-h-[100dvh] overflow-x-hidden bg-slate-100 px-2 py-2 sm:px-4 md:px-6 md:py-6 lg:h-[100dvh] lg:overflow-hidden">
+    <div className="resume-app min-h-[100dvh] overflow-x-hidden bg-slate-100 px-2 py-2 sm:px-4 md:px-6 md:py-6">
       {showSavedNotice ? (
         <div className="pointer-events-none fixed inset-0 z-50 flex items-center justify-center px-4 screen-only">
           <div className="rounded-[16px] border border-emerald-200 bg-white/95 px-6 py-4 text-center shadow-[0_24px_80px_rgba(15,23,42,0.18)] backdrop-blur">
@@ -442,14 +442,10 @@ export default function App() {
           </div>
         </div>
       ) : null}
-      <div className="flex h-full flex-col gap-2 md:gap-5">
+      <div className="flex min-h-[inherit] flex-col gap-1 md:gap-5">
         <Card className="z-30 shrink-0 rounded-[10px] border border-slate-200 bg-white/95 shadow-sm backdrop-blur screen-only">
-          <CardContent className="flex flex-col gap-2.5 p-2.5 sm:p-3 md:flex-row md:items-center md:justify-between">
-            <div>
-              <h1 className="text-xl font-semibold tracking-tight sm:text-2xl">이력서 관리 시스템</h1>
-            </div>
-
-            <div className="flex w-full flex-nowrap items-center gap-1 overflow-x-auto pb-1 md:w-auto md:flex-wrap md:overflow-visible md:pb-0">
+          <CardContent className="p-2 sm:p-2.5">
+            <div className={isPublicResumeMode ? "grid w-full grid-cols-2 items-center gap-1.5 md:flex md:flex-wrap md:justify-end md:overflow-visible" : "flex w-full flex-nowrap items-center gap-1 overflow-x-auto pb-1 md:flex-wrap md:overflow-visible md:pb-0"}>
               {!isPublicResumeMode ? (
                 <>
                   {user ? (
@@ -475,7 +471,7 @@ export default function App() {
                 </>
               ) : (
                 <>
-                  <div className={`${mobileHeaderChipClass} min-w-[110px] items-center gap-1 border-slate-200 bg-slate-50 font-medium text-slate-600 md:h-auto md:min-w-[180px] md:w-auto md:px-2.5 md:py-1 md:text-[12px]`}>
+                  <div className={`${mobileHeaderChipClass} flex w-full min-w-0 items-center justify-center gap-1 border-slate-200 bg-slate-50 text-[12px] font-medium text-slate-600 md:h-auto md:w-auto md:min-w-[140px] md:px-2.5 md:py-1 md:text-[12px]`}>
                     방문 횟수: {visitCount}
                   </div>
                   {user ? (
@@ -487,7 +483,7 @@ export default function App() {
                     </div>
                   ) : null}
                   {!user && googleClientId ? (
-                    <div className="min-w-[220px] shrink-0 md:w-[280px]">
+                    <div className="min-w-0 shrink md:w-[240px]">
                       <GoogleSignInButton clientId={googleClientId} disabled={!isReady} onSuccess={signIn} />
                     </div>
                   ) : null}
@@ -545,9 +541,9 @@ export default function App() {
           </CardContent>
         </Card>
 
-        <div className="min-h-0 flex-1 overflow-y-auto overscroll-contain pr-0 sm:pr-1">
-          <div className="space-y-3 pb-3 md:space-y-5 md:pb-4">
-            <div className={`grid gap-4 pt-1 md:gap-5 ${effectiveIsEditMode ? "xl:grid-cols-[200px_minmax(0,1fr)]" : "grid-cols-1"}`}>
+        <div className="min-h-0 flex-1 pr-0 sm:pr-1">
+          <div className="space-y-1.5 pb-2 md:space-y-5 md:pb-4">
+            <div className={`grid gap-2 pt-1 md:gap-5 ${effectiveIsEditMode ? "xl:grid-cols-[200px_minmax(0,1fr)]" : "grid-cols-1"}`}>
               {effectiveIsEditMode ? (
                 <div className="screen-only">
                   <Card className="rounded-[10px] border border-slate-200 bg-white shadow-sm">
@@ -598,25 +594,21 @@ export default function App() {
                   </>
                 ) : null}
 
-                <div className="space-y-4 md:space-y-5 print-content">
+                <div className="space-y-2 md:space-y-5 print-content">
                   {selectedEditorSection === "dashboard" ? (
                     effectiveIsEditMode ? (
                       <div data-export-dashboard>
                         <CareerDashboard items={allExperiences} profile={derivedProfile} companies={companies} />
                       </div>
                     ) : (
-                      <div className="space-y-4">
+                      <div className="space-y-2 md:space-y-4">
                         <Card className="rounded-[10px] border border-slate-200 bg-white shadow-sm">
-                          <CardContent className="space-y-4 p-3.5 sm:p-4 md:p-5">
-                            <div>
-                              <h2 className="text-base font-semibold leading-6">경력 대시보드</h2>
-                              <p className="text-[13px] leading-5 text-slate-500">공개 보기에서 경력 흐름과 핵심 지표를 확인합니다.</p>
-                            </div>
+                          <CardContent className="space-y-2 p-3.5 sm:p-4 md:space-y-4 md:p-5">
                             <CareerDashboard items={allExperiences} profile={derivedProfile} companies={companies} />
                           </CardContent>
                         </Card>
                         <Card className="rounded-[10px] border border-slate-200 bg-white shadow-sm">
-                          <CardContent className="space-y-4 p-3.5 sm:p-4 md:p-5">
+                          <CardContent className="space-y-2 p-3.5 sm:p-4 md:space-y-4 md:p-5">
                             <div>
                               <h2 className="text-2xl font-extrabold leading-7 tracking-tight text-slate-950 drop-shadow-[0_1px_0_rgba(255,255,255,0.7)]">
                                 배상학 이력서

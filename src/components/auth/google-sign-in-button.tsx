@@ -18,7 +18,8 @@ export function GoogleSignInButton({ clientId, disabled, onSuccess }: GoogleSign
     if (!google) return;
 
     buttonRef.current.innerHTML = "";
-    const buttonWidth = Math.min(Math.max(buttonRef.current.clientWidth, 220), 360);
+    const isMobileViewport = window.matchMedia("(max-width: 767px)").matches;
+    const buttonWidth = Math.min(Math.max(buttonRef.current.clientWidth, 160), 360);
 
     google.accounts.id.disableAutoSelect();
     google.accounts.id.initialize({
@@ -30,12 +31,12 @@ export function GoogleSignInButton({ clientId, disabled, onSuccess }: GoogleSign
 
     google.accounts.id.renderButton(buttonRef.current, {
       theme: "outline",
-      size: "large",
-      text: "signin_with",
-      shape: "pill",
+      size: isMobileViewport ? "small" : "medium",
+      text: isMobileViewport ? "signin" : "signin_with",
+      shape: isMobileViewport ? "rectangular" : "pill",
       width: buttonWidth,
     });
   }, [clientId, disabled, onSuccess]);
 
-  return <div ref={buttonRef} className={`w-full ${disabled ? "pointer-events-none opacity-60" : ""}`} />;
+  return <div ref={buttonRef} className={`google-sign-in-button h-7 w-full ${disabled ? "pointer-events-none opacity-60" : ""}`} />;
 }

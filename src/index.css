@@ -32,7 +32,7 @@
   margin: 0 auto;
   align-items: center;
   justify-content: center;
-  padding: 6px 0 0;
+  padding: 2px 0 0;
   perspective: 1400px;
 }
 
@@ -45,7 +45,7 @@
   justify-content: center;
   align-content: center;
   gap: 14px 14px;
-  padding: 14px 8px 10px;
+  padding: 6px 8px 4px;
   transform-origin: center center;
   animation: resume-skill-shield-sway 28s ease-in-out infinite alternate;
 }
@@ -70,14 +70,30 @@
 }
 
 @media (max-width: 768px) {
+  .resume-app [class*="border"][class*="rounded-"]:not([class*="rounded-full"]) {
+    border-radius: 6px !important;
+  }
+
+  .google-sign-in-button,
+  .google-sign-in-button > div,
+  .google-sign-in-button iframe,
+  .google-sign-in-button [role="button"] {
+    height: 28px !important;
+    min-height: 28px !important;
+  }
+
+  .google-sign-in-button [role="button"] {
+    align-items: center !important;
+  }
+
   .resume-skill-shield {
-    padding-top: 2px;
+    padding-top: 0;
   }
 
   .resume-skill-shield__frame {
     width: min(100%, 100%);
     gap: 8px 8px;
-    padding: 8px 2px 4px;
+    padding: 0 2px;
   }
 
   .resume-skill-shield__item {
