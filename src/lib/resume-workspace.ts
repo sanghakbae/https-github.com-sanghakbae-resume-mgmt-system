@@ -8,12 +8,17 @@ function getApiBaseUrl() {
   return import.meta.env.VITE_API_BASE_URL as string | undefined;
 }
 
+function canUseLocalWorkspaceStorage() {
+  return ((import.meta.env.VITE_ALLOW_LOCAL_WORKSPACE as string | undefined) ?? "false") === "true";
+}
+
 function getLocalWorkspaceKey(ownerId: string) {
   return `${WORKSPACE_KEY_PREFIX}${ownerId}`;
 }
 
 function loadLocalWorkspace(ownerId: string) {
   if (typeof window === "undefined") return null;
+  if (!canUseLocalWorkspaceStorage()) return null;
 
   try {
     const raw = window.localStorage.getItem(getLocalWorkspaceKey(ownerId));
@@ -81,12 +86,13 @@ function normalizeExperienceCategory(item: ExperienceItem): ExperienceItem {
   const normalizedItem: ExperienceItem = {
     ...item,
     organization: normalizeCompanyName(item.organization),
+    featured: item.featured ?? false,
   };
   const highlight = generateSecurityTags({
     title: normalizedItem.title,
     organization: normalizedItem.organization,
     description: normalizedItem.description,
-    existingTags: normalizedItem.highlight,
+    existingTags: [],
   });
 
   return {
@@ -134,7 +140,8 @@ function mergeWorkspaceWithDefaults(
 
 export function getStorageMode() {
   if (isSupabaseConfigured) return "supabase";
-  return getApiBaseUrl() ? "api" : "local";
+  if (getApiBaseUrl()) return "api";
+  return canUseLocalWorkspaceStorage() ? "local" : "database required";
 }
 
 export async function loadWorkspace(
@@ -194,18 +201,22 @@ export async function loadWorkspace(
     return createWorkspace(ownerId, defaultProfile, defaultCompanies, defaultExperiences);
   }
 
-  try {
-    for (const candidateOwnerId of candidateOwnerIds) {
-      const workspace = loadLocalWorkspace(candidateOwnerId);
-      if (workspace) {
-        return mergeWorkspaceWithDefaults(workspace, defaultProfile, defaultCompanies, defaultExperiences);
+  if (canUseLocalWorkspaceStorage()) {
+    try {
+      for (const candidateOwnerId of candidateOwnerIds) {
+        const workspace = loadLocalWorkspace(candidateOwnerId);
+        if (workspace) {
+          return mergeWorkspaceWithDefaults(workspace, defaultProfile, defaultCompanies, defaultExperiences);
+        }
       }
-    }
 
-    return createWorkspace(ownerId, defaultProfile, defaultCompanies, defaultExperiences);
-  } catch {
-    return createWorkspace(ownerId, defaultProfile, defaultCompanies, defaultExperiences);
+      return createWorkspace(ownerId, defaultProfile, defaultCompanies, defaultExperiences);
+    } catch {
+      return createWorkspace(ownerId, defaultProfile, defaultCompanies, defaultExperiences);
+    }
   }
+
+  return createWorkspace(ownerId, defaultProfile, defaultCompanies, defaultExperiences);
 }
 
 export async function saveWorkspace(workspace: ResumeWorkspace) {
@@ -256,11 +267,16 @@ export async function saveWorkspace(workspace: ResumeWorkspace) {
     return;
   }
 
+  if (!canUseLocalWorkspaceStorage()) {
+    throw new Error("데이터베이스 저장소가 설정되지 않아 이력서 데이터를 저장할 수 없습니다.");
+  }
+
   window.localStorage.setItem(getLocalWorkspaceKey(workspace.ownerId), JSON.stringify(workspace));
 }
 
 export function listLocalWorkspaceSummaries(): WorkspaceSummary[] {
   if (typeof window === "undefined") return [];
+  if (!canUseLocalWorkspaceStorage()) return [];
 
   const items: WorkspaceSummary[] = [];
 

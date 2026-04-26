@@ -118,6 +118,15 @@ export function ExperienceForm({
                 placeholder="쉼표로 구분 예: AWS, IAM, 아키텍처"
               />
             </FormField>
+            <label className="flex cursor-pointer items-center gap-2 rounded-[10px] border border-slate-200 bg-slate-50 px-3 py-2 text-[13px] font-medium leading-5 text-slate-700">
+              <input
+                type="checkbox"
+                checked={form.featured}
+                onChange={(e) => updateField("featured", e.target.checked)}
+                className="h-4 w-4 accent-slate-900"
+              />
+              대표 성과 하이라이트에 표시
+            </label>
             <FormField label="업무 이미지">
               <div className="space-y-2">
                 <label className="flex cursor-pointer items-center justify-center gap-2 rounded-[10px] border border-dashed border-slate-300 bg-slate-50 px-3 py-3 text-[13px] font-medium leading-5 text-slate-700">
@@ -174,6 +183,11 @@ export function ExperienceForm({
                       </p>
                       {experience.highlight.length ? (
                         <p className="text-[12px] leading-4 text-slate-500">{experience.highlight.join(" · ")}</p>
+                      ) : null}
+                      {experience.featured ? (
+                        <span className="inline-flex w-fit rounded-[5px] border border-slate-200 bg-slate-900 px-1.5 py-0.5 text-[10px] font-semibold leading-none text-white">
+                          대표 성과
+                        </span>
                       ) : null}
                     </div>
 

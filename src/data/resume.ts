@@ -1,4 +1,4 @@
-import { Award, Briefcase, CheckCircle2, Cloud, FileText, GraduationCap, Shield, User, Server } from "lucide-react";
+import { Award, Briefcase, CheckCircle2, Cloud, FileText, GraduationCap, Heart, Mail, Shield, User, Server } from "lucide-react";
 import type { CategoryMeta, CompanyFormValues, CompanyProfile, ExperienceFormValues, ExperienceItem, Profile, ResumeCategory } from "@/types/resume";
 
 export const categoryOptions: ResumeCategory[] = ["모의해킹", "취약점 진단", "보안 컨설팅", "클라우드 보안", "개발/자동화", "인증"];
@@ -13,12 +13,14 @@ export const categoryMeta: Record<ResumeCategory, CategoryMeta> = {
 };
 
 export const profileInfoItems = [
-  { key: "education", label: "학력", icon: GraduationCap },
-  { key: "career", label: "경력", icon: Briefcase },
-  { key: "specialty", label: "전문분야", icon: Shield },
-  { key: "certifications", label: "자격 사항", icon: Award },
-  { key: "military", label: "병역 사항", icon: FileText },
-  { key: "industries", label: "산업 군", icon: CheckCircle2 },
+  { key: "education", label: "학력", icon: GraduationCap, linkKey: undefined },
+  { key: "career", label: "경력", icon: Briefcase, linkKey: undefined },
+  { key: "specialty", label: "전문분야", icon: Shield, linkKey: undefined },
+  { key: "certifications", label: "자격 사항", icon: Award, linkKey: undefined },
+  { key: "military", label: "병역 사항", icon: FileText, linkKey: undefined },
+  { key: "industries", label: "산업 군", icon: CheckCircle2, linkKey: undefined },
+  { key: "hobby", label: "취미", icon: Heart, linkKey: "hobbyUrl" },
+  { key: "contactEmail", label: "연락처", icon: Mail, linkKey: "contactEmail" },
 ] as const;
 
 export const profileHeaderIcon = User;
@@ -174,6 +176,9 @@ export const defaultProfile: Profile = {
   specialty: "ISMS / ISMS-P / ISO 27001 / CSAP / IT·OT 보안 / 모의해킹 / 취약점 진단",
   military: "육군 / 보병 / 2001.08.04 ~ 2004.07.13 / 병역특례(소집해제)",
   industries: "AI 서비스 / 제조 / 유통 / 금융 / 공공 / 발전 / 에너지 / 이커머스",
+  hobby: "",
+  hobbyUrl: "",
+  contactEmail: "",
   certifications: "CISSP / LPIC Level 1 / 정보처리기사 / 전자계산기기능사 / 전자기기기능사 / Nozomi Networks Certified Engineer",
 };
 
@@ -186,7 +191,7 @@ export const defaultExperiences: ExperienceItem[] = [
     category: "인증",
     description:
       "CISO/CPO로서 ISMS 기준 정보보안 정책과 지침을 제정하고, 법적 준거성 검토, 위험평가, 보안성 검토 절차, 개인정보 위수탁 및 침해사고 대응 절차를 수립했습니다. 또한 DLP, 백신, Trivy, SonarQube, Datadog 기반의 보안 운영 체계를 구축했습니다.",
-    highlight: ["CISO", "CPO", "ISMS", "위험평가", "보안 운영"],
+    highlight: ["ISMS", "보안 정책", "위험평가", "개인정보보호", "보안 운영"],
   },
   {
     id: 1002,
@@ -196,7 +201,7 @@ export const defaultExperiences: ExperienceItem[] = [
     category: "모의해킹",
     description:
       "대외 웹 서비스 18개 사이트를 대상으로 Burp Suite 기반 모의해킹을 수행하고, 연간 정보보호 교육 계획 수립, 신규 입사자 보안 교육, 개발보안 가이드 작성과 개발자 대상 교육을 운영했습니다.",
-    highlight: ["Burp Suite", "웹 모의해킹", "보안 교육", "개발보안", "18개 사이트"],
+    highlight: ["웹 모의해킹", "Burp Suite", "보안 교육", "개발보안", "점검 가이드"],
   },
   {
     id: 1003,
@@ -206,7 +211,7 @@ export const defaultExperiences: ExperienceItem[] = [
     category: "개발/자동화",
     description:
       "사내 정보보호 관리체계 운영 효율화를 위해 ITGC 통제 관리시스템을 설계하고 등록 프로세스를 정비했습니다. 통제 항목 관리, 점검 이력 추적, 증적 관리, 운영 현황 가시화를 중심으로 실무 운영 체계를 구축했습니다.",
-    highlight: ["ITGC", "통제 관리", "개발", "증적 관리", "운영 자동화"],
+    highlight: ["ITGC", "통제 관리", "증적 관리", "운영 자동화", "관리체계 구축"],
   },
   {
     id: 1004,
@@ -216,7 +221,7 @@ export const defaultExperiences: ExperienceItem[] = [
     category: "인증",
     description:
       "기업 정보보호 관리자 역할로 정보보호 규정 및 절차 제정, 임직원 보안 인식 교육, 개인정보처리방침 및 서약서 개정, 보안성 검토 절차 수립, VPN·방화벽·DLP·백신 운영과 함께 CSAP 및 ISO 27001/27017 인증 준비를 수행했습니다.",
-    highlight: ["정보보호 관리체계", "CSAP", "ISO 27001", "ISO 27017", "보안 운영"],
+    highlight: ["CSAP", "ISO 27001", "ISO 27017", "보안성 검토", "보안 운영"],
   },
   {
     id: 1005,
@@ -236,7 +241,7 @@ export const defaultExperiences: ExperienceItem[] = [
     category: "인증",
     description:
       "ISMS-P 322개 통제항목 기준 Gap 분석, 위험 분석 및 평가, 법적 준거성 검토, 결함 조치 가이드 검토와 영업점 현장 점검 체크리스트 개정을 주도했습니다.",
-    highlight: ["ISMS-P", "PM", "위험분석", "법적 준거성", "Gap 분석"],
+    highlight: ["ISMS-P", "Gap 분석", "위험평가", "법적 준거성", "현장 점검"],
   },
   {
     id: 1007,
@@ -245,8 +250,8 @@ export const defaultExperiences: ExperienceItem[] = [
     period: "2023.01 - 2023.03",
     category: "인증",
     description:
-      "ISO 27001 통제항목 기준 Gap 분석과 위험평가, 모의해킹 및 시스템 하드닝 리뷰를 수행하고 GDPR, HIPPA, CPRA, JP APPI 등 글로벌 컴플라이언스 준거성을 검토했습니다.",
-    highlight: ["ISO 27001", "GDPR", "HIPPA", "하드닝 리뷰", "컴플라이언스"],
+      "ISO 27001 통제항목 기준 Gap 분석과 위험평가, 모의해킹 및 시스템 하드닝 리뷰를 수행하고 GDPR, HIPAA, CPRA, JP APPI 등 글로벌 컴플라이언스 준거성을 검토했습니다.",
+    highlight: ["ISO 27001", "GDPR", "HIPAA", "하드닝", "컴플라이언스"],
   },
   {
     id: 1008,
@@ -256,7 +261,7 @@ export const defaultExperiences: ExperienceItem[] = [
     category: "인증",
     description:
       "ISMS-P 322개 통제항목 기준 Gap 분석과 위험평가, 웹 서비스 모의해킹, 시스템 하드닝 리뷰, 정책 및 지침 개정, 시스템·개인정보 흐름도 작성을 수행했습니다.",
-    highlight: ["ISMS-P", "초기 인증", "웹 모의해킹", "하드닝", "PM"],
+    highlight: ["ISMS-P", "Gap 분석", "웹 모의해킹", "하드닝", "보안 정책"],
   },
   {
     id: 1009,
@@ -266,7 +271,7 @@ export const defaultExperiences: ExperienceItem[] = [
     category: "인증",
     description:
       "ISMS 통제항목 234개 기준 Gap 분석과 위험평가, 모의해킹 및 시스템 하드닝 리뷰, 정보보안 규정 개정, 법적 준거성 검토, 인증심사 대응 교육을 수행했습니다.",
-    highlight: ["ISMS", "사후 인증", "위험평가", "인증심사", "PM"],
+    highlight: ["ISMS", "Gap 분석", "위험평가", "하드닝", "인증 대응"],
   },
   {
     id: 1010,
@@ -276,7 +281,7 @@ export const defaultExperiences: ExperienceItem[] = [
     category: "클라우드 보안",
     description:
       "대륜발전 및 별내에너지 발전소를 대상으로 관문 방화벽 정책 분석, Nozomi Guardian 기반 패킷 분석, 자산 식별, 네트워크 구성도 작성, OA/FA 망분리와 Purdue 모델 기반 OT 보안 아키텍처를 설계했습니다.",
-    highlight: ["OT 보안", "Nozomi Guardian", "망분리", "Purdue 모델", "마스터플랜"],
+    highlight: ["OT 보안", "Nozomi Guardian", "망분리", "Purdue 모델", "보안 아키텍처"],
   },
   {
     id: 1011,
@@ -286,7 +291,7 @@ export const defaultExperiences: ExperienceItem[] = [
     category: "클라우드 보안",
     description:
       "Nozomi Guardian 기반 OA/FA 네트워크 패킷 분석과 이상징후 분석을 수행하고, 중장기 OT 보안 마스터플랜과 글로벌 표준 기반 FA 보안 아키텍처 모델을 수립했습니다.",
-    highlight: ["LS산전", "OT 보안", "Nozomi Guardian", "OA/FA", "PM"],
+    highlight: ["OT 보안", "Nozomi Guardian", "이상징후 분석", "보안 마스터플랜", "보안 아키텍처"],
   },
   {
     id: 1012,
@@ -296,7 +301,7 @@ export const defaultExperiences: ExperienceItem[] = [
     category: "클라우드 보안",
     description:
       "OA/FA 네트워크 분석과 보안 운영 현황 검토를 통해 망분리 설계안을 포함한 중장기 OT 보안 마스터플랜을 수립했습니다.",
-    highlight: ["SK실트론", "OT 보안", "망분리", "마스터플랜", "PM"],
+    highlight: ["OT 보안", "망분리", "보안 운영", "보안 마스터플랜", "OA/FA"],
   },
   {
     id: 1013,
@@ -306,7 +311,7 @@ export const defaultExperiences: ExperienceItem[] = [
     category: "개발/자동화",
     description:
       "보안기술팀 팀장으로 DB 접근제어와 소스코드 취약점 점검 솔루션 도입을 기획하고, 보안성 검토 절차와 체크리스트를 수립했으며 보안관제 고도화와 방화벽 정책 개선을 수행했습니다.",
-    highlight: ["보안성 검토", "DB 접근제어", "소스코드 진단", "보안관제", "팀장"],
+    highlight: ["보안성 검토", "DB 접근제어", "소스코드 진단", "보안관제", "방화벽 정책"],
   },
   {
     id: 1014,
@@ -316,7 +321,7 @@ export const defaultExperiences: ExperienceItem[] = [
     category: "개발/자동화",
     description:
       "OT 보안솔루션팀 팀장으로 제어시스템 보안 리서치와 프리세일즈를 수행했으며, 2018 평창동계올림픽 에너지 모니터링 시스템 구축 프로젝트를 리드했습니다. 또한 PLC 레더 프로그램과 Modbus 해킹 도구 개발 경험을 보유하고 있습니다.",
-    highlight: ["OT 솔루션", "EMS", "PLC", "Modbus", "프리세일즈"],
+    highlight: ["OT 보안", "EMS", "PLC", "Modbus", "프리세일즈"],
   },
   {
     id: 1015,
@@ -326,7 +331,7 @@ export const defaultExperiences: ExperienceItem[] = [
     category: "클라우드 보안",
     description:
       "국내 최초 기반시설 SCADA 시스템 보안솔루션 구축과 운영을 수행하고, 솔루션 데이터와 네트워크 패킷 분석으로 비식별 자산과 Multi Homed Network를 식별해 네트워크 분리를 강화했습니다.",
-    highlight: ["SCADA", "기반시설", "OT 보안솔루션", "Multi Homed Network", "운영"],
+    highlight: ["SCADA", "기반시설 보안", "OT 보안", "Multi Homed Network", "망분리"],
   },
   {
     id: 1016,
@@ -336,7 +341,7 @@ export const defaultExperiences: ExperienceItem[] = [
     category: "모의해킹",
     description:
       "아시아나 에바카스 PCI-DSS, NH농협 개인정보보호, KB국민은행 보안 컨설팅, KT 차세대 시스템 보안성 검토, 라이나생명 및 BNP 파리바카디프 모의해킹 등 다양한 프로젝트를 PL/PM으로 수행했습니다.",
-    highlight: ["PCI-DSS", "개인정보보호", "웹 모의해킹", "PL", "PM"],
+    highlight: ["PCI-DSS", "개인정보보호", "웹 모의해킹", "보안성 검토", "보안 컨설팅"],
   },
   {
     id: 1017,
@@ -346,7 +351,7 @@ export const defaultExperiences: ExperienceItem[] = [
     category: "모의해킹",
     description:
       "송도 IDC IT 보안팀에서 FireEye, ShellMonitor, ESM 탐지 룰 고도화, 침해사고 분석 보고서 작성과 함께 CJ 계열사 정기 웹 모의해킹과 YTN 통합보도정보시스템 모의해킹을 수행했습니다.",
-    highlight: ["FireEye", "침해사고 분석", "ESM", "웹 모의해킹", "하드닝"],
+    highlight: ["FireEye", "침해사고 분석", "ESM", "웹 모의해킹", "탐지 룰"],
   },
   {
     id: 1018,
@@ -356,7 +361,7 @@ export const defaultExperiences: ExperienceItem[] = [
     category: "모의해킹",
     description:
       "3.20 전산대란과 6.25 사이버테러 대응 분석에 참여하고, 한양대학교와 언론사, 공공기관, 기업 웹 서비스를 대상으로 모의해킹과 취약점 진단을 수행했습니다. SQLMAP Injection 패턴과 WAF 우회 패턴 연구도 병행했습니다.",
-    highlight: ["침해사고 대응", "한양대학교", "언론사", "SQLMAP", "WAF 우회"],
+    highlight: ["침해사고 대응", "웹 모의해킹", "취약점 진단", "SQL Injection", "WAF 우회"],
   },
   {
     id: 1019,
@@ -366,7 +371,7 @@ export const defaultExperiences: ExperienceItem[] = [
     category: "취약점 진단",
     description:
       "지식경제부 사이버안전센터 소속으로 발전기관과 에너지 공기업 기반시설을 대상으로 워크스테이션 시스템 취약점 점검, 방화벽 정책 분석, Multi Homed Network 식별, 망분리 적정성 검토를 수행했습니다.",
-    highlight: ["기반시설", "취약점 분석", "방화벽 정책", "망분리", "에너지"],
+    highlight: ["기반시설 보안", "시스템 취약점 진단", "방화벽 정책", "망분리", "망연계"],
   },
   {
     id: 1020,
@@ -376,7 +381,7 @@ export const defaultExperiences: ExperienceItem[] = [
     category: "취약점 진단",
     description:
       "SKT IT 보안팀 파견 인력으로 서버, WEB/WAS, DBMS, 네트워크 취약점 진단과 내·외부 웹 서비스 모의해킹을 수행하고 점검 가이드와 자동화 스크립트를 고도화했습니다.",
-    highlight: ["SKT", "WEB/WAS", "DBMS", "자동화 스크립트", "SQL Injection"],
+    highlight: ["인프라 보안", "시스템 취약점 진단", "웹 모의해킹", "자동화 스크립트", "SQL Injection"],
   },
   {
     id: 1021,
@@ -386,7 +391,7 @@ export const defaultExperiences: ExperienceItem[] = [
     category: "개발/자동화",
     description:
       "위협분석팀 연구원으로 웹 취약점 스캐너 개발, GS 인증 참여, 허니팟 기반 공격 패턴 분석, ModSecurity 및 WebKnight 시그니처 룰 개발과 개발자 대상 보안 교육을 수행했습니다.",
-    highlight: ["WAF", "시그니처 룰", "허니팟", "GS 인증", "보안 교육"],
+    highlight: ["WAF", "탐지 룰", "허니팟", "웹 취약점 진단", "보안 교육"],
   },
 ];
 
@@ -399,6 +404,7 @@ export const emptyExperienceForm: ExperienceFormValues = {
   highlight: "",
   url: "",
   image: "",
+  featured: false,
 };
 
 export const emptyCompanyForm: CompanyFormValues = {

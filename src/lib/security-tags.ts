@@ -15,6 +15,30 @@ type TagRule = {
 
 const MAX_SECURITY_TAGS = 5;
 
+const CURATED_PROJECT_TAGS: Record<string, string[]> = {
+  "CISO/CPO 기반 정보보호 관리체계 수립 및 ISMS 준비": ["ISMS", "보안 정책", "위험평가", "개인정보보호", "보안 운영"],
+  "대외 웹 서비스 모의해킹 및 보안 교육 체계 운영": ["웹 모의해킹", "Burp Suite", "보안 교육", "개발보안", "점검 가이드"],
+  "ITGC 통제 관리시스템 개발 및 운영": ["ITGC", "통제 관리", "증적 관리", "운영 자동화", "관리체계 구축"],
+  "정보보호 관리체계 운영 및 CSAP·ISO 인증 대응": ["CSAP", "ISO 27001", "ISO 27017", "보안성 검토", "보안 운영"],
+  "업무용 소프트웨어 보안 및 비용 관리 체계 운영": ["Google Workspace", "GitHub", "Atlassian", "2FA", "IP ACL"],
+  "롯데면세점 ISMS-P 인증(사후) 컨설팅 PM": ["ISMS-P", "Gap 분석", "위험평가", "법적 준거성", "현장 점검"],
+  "메디트 ISO 27001 갱신 및 글로벌 컴플라이언스 검토 PM": ["ISO 27001", "GDPR", "HIPAA", "하드닝", "컴플라이언스"],
+  "CJ 푸드빌 ISMS-P 최초 인증 컨설팅 PM": ["ISMS-P", "Gap 분석", "웹 모의해킹", "하드닝", "보안 정책"],
+  "롯데 마트·슈퍼 ISMS 사후 인증 컨설팅 PM": ["ISMS", "Gap 분석", "위험평가", "하드닝", "인증 대응"],
+  "발전소 OT 보안 마스터플랜 및 아키텍처 설계": ["OT 보안", "Nozomi Guardian", "망분리", "Purdue 모델", "보안 아키텍처"],
+  "LS산전 OT 보안체계 수립 컨설팅 PM": ["OT 보안", "Nozomi Guardian", "이상징후 분석", "보안 마스터플랜", "보안 아키텍처"],
+  "SK실트론 OT 보안 마스터플랜 수립 PM": ["OT 보안", "망분리", "보안 운영", "보안 마스터플랜", "OA/FA"],
+  "위메프 보안기술팀 운영 및 보안성 검토 체계 수립": ["보안성 검토", "DB 접근제어", "소스코드 진단", "보안관제", "방화벽 정책"],
+  "평창동계올림픽 EMS 구축 및 OT 보안 솔루션 프리세일즈": ["OT 보안", "EMS", "PLC", "Modbus", "프리세일즈"],
+  "한국수자원공사 천안정수장 OT 보안솔루션 구축 및 운영": ["SCADA", "기반시설 보안", "OT 보안", "Multi Homed Network", "망분리"],
+  "금융·항공·공공 분야 모의해킹 및 개인정보보호 컨설팅": ["PCI-DSS", "개인정보보호", "웹 모의해킹", "보안성 검토", "보안 컨설팅"],
+  "CJ 그룹 웹 모의해킹 및 보안시스템 운영": ["FireEye", "침해사고 분석", "ESM", "웹 모의해킹", "탐지 룰"],
+  "침해사고 대응 및 대학·언론사 모의해킹": ["침해사고 대응", "웹 모의해킹", "취약점 진단", "SQL Injection", "WAF 우회"],
+  "국가 기반시설 취약점 분석 및 평가": ["기반시설 보안", "시스템 취약점 진단", "방화벽 정책", "망분리", "망연계"],
+  "SKT 인프라 보안 취약점 진단 및 웹 모의해킹": ["인프라 보안", "시스템 취약점 진단", "웹 모의해킹", "자동화 스크립트", "SQL Injection"],
+  "웹방화벽 시그니처 룰 개발 및 웹 취약점 연구": ["WAF", "탐지 룰", "허니팟", "웹 취약점 진단", "보안 교육"],
+};
+
 const TAG_RULES: TagRule[] = [
   { tag: "OT 보안", synonyms: ["ot", "ics", "scada", "plc", "dcs", "hmi", "제어시스템", "산업제어", "스마트팩토리"], categories: ["클라우드 보안"] },
   { tag: "ICS 보안", synonyms: ["ics", "산업제어", "제어시스템", "plc", "scada"], categories: ["클라우드 보안"] },
@@ -161,6 +185,11 @@ export function inferExperienceCategory(input: ProjectTagInput): ResumeCategory 
 }
 
 export function generateSecurityTags(input: ProjectTagInput) {
+  const curatedTags = CURATED_PROJECT_TAGS[input.title.trim()];
+  if (curatedTags) {
+    return curatedTags.slice(0, MAX_SECURITY_TAGS);
+  }
+
   const rawSource = [input.title, input.organization, input.description, ...(input.existingTags ?? [])].join(" ");
   const source = normalizeText(rawSource);
   const scoredTags = new Map<string, number>();

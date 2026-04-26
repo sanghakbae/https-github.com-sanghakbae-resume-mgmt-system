@@ -1,0 +1,141 @@
+<!doctype html>
+<html lang="ko">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>모바일 이력서 미리보기</title>
+  <style>
+    * {
+      box-sizing: border-box;
+    }
+
+    html,
+    body {
+      min-height: 100%;
+      margin: 0;
+      background: #e5e7eb;
+      color: #0f172a;
+      font-family: system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
+    }
+
+    body {
+      display: flex;
+      justify-content: center;
+      padding: 24px;
+    }
+
+    .mobile-shell {
+      width: min(100%, 450px);
+    }
+
+    .mobile-frame {
+      width: 414px;
+      max-width: 100%;
+      height: 844px;
+      overflow: hidden;
+      border: 1px solid #cbd5e1;
+      border-radius: 28px;
+      background: #f8fafc;
+      box-shadow: 0 24px 80px rgba(15, 23, 42, 0.18);
+    }
+
+    iframe {
+      display: block;
+      width: 100%;
+      height: 100%;
+      border: 0;
+    }
+
+    @media (max-width: 480px) {
+      body {
+        padding: 0;
+        background: #f1f5f9;
+      }
+
+      .mobile-shell,
+      .mobile-frame {
+        width: 100%;
+        height: 100dvh;
+        border: 0;
+        border-radius: 0;
+        box-shadow: none;
+      }
+    }
+  </style>
+</head>
+<body>
+  <main class="mobile-shell">
+    <div class="mobile-frame">
+      <iframe id="mobilePreviewFrame" title="모바일 이력서 미리보기" src="/?mobilePreview=1"></iframe>
+    </div>
+  </main>
+  <script>
+    const frame = document.getElementById("mobilePreviewFrame");
+
+    function reduceFrameFonts() {
+      const doc = frame.contentDocument;
+      if (!doc?.body) return;
+
+      const elements = [doc.body, ...doc.body.querySelectorAll("*")];
+
+      for (const element of elements) {
+        const currentSize = Number.parseFloat(doc.defaultView.getComputedStyle(element).fontSize);
+        if (!Number.isFinite(currentSize)) continue;
+
+        if (!element.dataset.mobileOriginalFontSize) {
+          element.dataset.mobileOriginalFontSize = String(currentSize);
+        }
+
+        const originalSize = Number.parseFloat(element.dataset.mobileOriginalFontSize);
+        element.style.fontSize = `${Math.max(8, originalSize - 2)}px`;
+      }
+    }
+
+    function installMobileFontScale() {
+      installMobilePreviewStyles();
+      reduceFrameFonts();
+
+      const doc = frame.contentDocument;
+      if (!doc?.body) return;
+
+      const observer = new MutationObserver(() => {
+        window.requestAnimationFrame(reduceFrameFonts);
+      });
+
+      observer.observe(doc.body, {
+        childList: true,
+        subtree: true,
+      });
+
+      window.setTimeout(reduceFrameFonts, 250);
+      window.setTimeout(reduceFrameFonts, 1000);
+    }
+
+    function installMobilePreviewStyles() {
+      const doc = frame.contentDocument;
+      if (!doc?.head || doc.getElementById("mobilePreviewStyles")) return;
+
+      const style = doc.createElement("style");
+      style.id = "mobilePreviewStyles";
+      style.textContent = `
+        .resume-app {
+          padding-left: 4px !important;
+          padding-right: 4px !important;
+        }
+
+        .resume-app > .flex {
+          gap: 4px !important;
+        }
+
+        .print-content > .space-y-2,
+        .print-content > .space-y-4 {
+          row-gap: 4px !important;
+        }
+      `;
+      doc.head.appendChild(style);
+    }
+
+    frame.addEventListener("load", installMobileFontScale);
+  </script>
+</body>
+</html>

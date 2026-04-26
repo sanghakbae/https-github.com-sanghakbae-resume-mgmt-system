@@ -74,16 +74,9 @@
     border-radius: 6px !important;
   }
 
-  .google-sign-in-button,
-  .google-sign-in-button > div,
-  .google-sign-in-button iframe,
-  .google-sign-in-button [role="button"] {
+  .google-sign-in-button {
     height: 28px !important;
     min-height: 28px !important;
-  }
-
-  .google-sign-in-button [role="button"] {
-    align-items: center !important;
   }
 
   .resume-skill-shield {

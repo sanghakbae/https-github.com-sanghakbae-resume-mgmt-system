@@ -1,3 +1,4 @@
+import type { MouseEvent } from "react";
 import { categoryMeta } from "@/data/resume";
 import { ExternalLink, Pencil, Trash2 } from "lucide-react";
 import { Button } from "@/components/ui/button";
@@ -17,8 +18,8 @@ export function ExperienceCard({ item, isEditMode, onEdit, onRemove }: Experienc
     <div className="rounded-[10px] border border-slate-200 p-3.5 sm:p-4" data-export-project-card>
       <div className="flex flex-col gap-3 lg:flex-row lg:items-start lg:justify-between">
         <div>
-          <h4 className="text-base font-semibold leading-6 text-slate-900">{item.title}</h4>
-          <p className="mt-1 text-[13px] leading-5 text-slate-500">{item.period}</p>
+          <h4 className="text-base font-semibold leading-5 text-slate-900 md:leading-6">{item.title}</h4>
+          <p className="mt-1 text-[13px] leading-4 text-slate-500 md:leading-5">{item.period}</p>
         </div>
 
         {isEditMode ? (
@@ -35,16 +36,16 @@ export function ExperienceCard({ item, isEditMode, onEdit, onRemove }: Experienc
         ) : null}
       </div>
 
-      <div className={`mt-3 grid gap-3 ${item.image ? "lg:grid-cols-[minmax(0,1fr)_320px]" : "grid-cols-1"}`}>
+      <div className="mt-3 grid gap-3">
         <div>
-          <p className="whitespace-pre-wrap text-sm leading-6 text-slate-600">{item.description}</p>
+          <p className="whitespace-pre-wrap text-sm leading-5 text-slate-600 md:leading-6">{item.description}</p>
 
           {item.url ? (
             <div className="mt-3 space-y-2">
               {linkPreview ? (
                 <a
                   href={item.url}
-                  target="_blank"
+                  onClick={(event) => openProjectPopup(event, item.url)}
                   rel="noreferrer"
                   className="flex items-center gap-2 rounded-[10px] border border-slate-200 bg-slate-50 px-2.5 py-2"
                 >
@@ -62,7 +63,7 @@ export function ExperienceCard({ item, isEditMode, onEdit, onRemove }: Experienc
               ) : (
                 <a
                   href={item.url}
-                  target="_blank"
+                  onClick={(event) => openProjectPopup(event, item.url)}
                   rel="noreferrer"
                   className="inline-flex items-center gap-1.5 text-sm font-medium text-sky-700 underline underline-offset-4"
                 >
@@ -72,13 +73,17 @@ export function ExperienceCard({ item, isEditMode, onEdit, onRemove }: Experienc
               )}
             </div>
           ) : null}
-        </div>
 
-        {item.image ? (
-          <div className="overflow-hidden rounded-[10px] border border-slate-200 bg-slate-50">
-            <img src={item.image} alt={`${item.title} 이미지`} className="h-auto max-h-72 w-full object-contain" />
-          </div>
-        ) : null}
+          {item.image ? (
+            <button
+              type="button"
+              className="mt-3 w-full overflow-hidden rounded-[10px] border border-slate-200 bg-slate-50 text-left transition hover:border-slate-300 focus:outline-none focus:ring-2 focus:ring-slate-900/20"
+              onClick={() => openImagePopup(item.image, item.title)}
+            >
+              <img src={item.image} alt={`${item.title} 이미지`} className="h-auto max-h-[374px] w-full object-contain" />
+            </button>
+          ) : null}
+        </div>
       </div>
 
       {item.highlight.length ? (
@@ -104,6 +109,38 @@ export function ExperienceCard({ item, isEditMode, onEdit, onRemove }: Experienc
       )}
     </div>
   );
+}
+
+function openProjectPopup(event: MouseEvent<HTMLAnchorElement>, url: string) {
+  event.preventDefault();
+
+  const popup = window.open(
+    url,
+    "resume-project-link",
+    "popup=yes,width=1180,height=820,left=120,top=80,noopener,noreferrer,scrollbars=yes,resizable=yes",
+  );
+
+  if (!popup) {
+    window.open(url, "_blank", "noopener,noreferrer");
+  }
+}
+
+function openImagePopup(url: string, title: string) {
+  const popup = window.open(
+    "",
+    "resume-project-image",
+    "popup=yes,width=1180,height=820,left=120,top=80,noopener,noreferrer,scrollbars=yes,resizable=yes",
+  );
+
+  if (!popup) {
+    window.open(url, "_blank", "noopener,noreferrer");
+    return;
+  }
+
+  popup.document.title = `${title} 이미지`;
+  popup.document.body.style.margin = "0";
+  popup.document.body.style.background = "#0f172a";
+  popup.document.body.innerHTML = `<img src="${url}" alt="${title} 이미지" style="display:block;max-width:100%;max-height:100vh;margin:auto;object-fit:contain;" />`;
 }
 
 function getLinkPreview(url?: string) {

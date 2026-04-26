@@ -82,6 +82,7 @@ function validateCompany(form: CompanyFormValues): CompanyValidationErrors {
 export default function App() {
   const googleClientId = ((import.meta.env.VITE_GOOGLE_CLIENT_ID as string | undefined)?.trim() || DEFAULT_GOOGLE_CLIENT_ID).trim();
   const isPublicResumeMode = ((import.meta.env.VITE_PUBLIC_RESUME_MODE as string | undefined) ?? "false") === "true";
+  const isMobilePreview = typeof window !== "undefined" && new URLSearchParams(window.location.search).get("mobilePreview") === "1";
   const adminEmails = parseEnvEmailList(import.meta.env.VITE_ADMIN_EMAILS as string | undefined);
   const editorEmails = parseEnvEmailList(import.meta.env.VITE_EDITOR_EMAILS as string | undefined);
   const primaryWorkspaceId = (editorEmails[0] ?? adminEmails[0] ?? DEFAULT_PRIMARY_WORKSPACE_ID).toLowerCase();
@@ -301,6 +302,7 @@ export default function App() {
       highlight: autoTags,
       url: form.url.trim() || undefined,
       image: form.image || undefined,
+      featured: form.featured,
     };
 
     commitExperience(nextItem);
@@ -329,6 +331,7 @@ export default function App() {
       highlight: item.highlight.join(", "),
       url: item.url ?? "",
       image: item.image ?? "",
+      featured: item.featured ?? false,
     });
     setFormErrors({});
     setIsEditMode(true);
@@ -484,7 +487,7 @@ export default function App() {
                   ) : null}
                   {!user && googleClientId ? (
                     <div className="min-w-0 shrink md:w-[240px]">
-                      <GoogleSignInButton clientId={googleClientId} disabled={!isReady} onSuccess={signIn} />
+                      <GoogleSignInButton clientId={googleClientId} compact={isMobilePreview} disabled={!isReady} onSuccess={signIn} />
                     </div>
                   ) : null}
                   {!user && !googleClientId ? (

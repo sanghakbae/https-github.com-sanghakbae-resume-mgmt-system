@@ -12,6 +12,7 @@ export type ExperienceItem = {
   highlight: string[];
   url?: string;
   image?: string;
+  featured?: boolean;
 };
 
 export type Profile = {
@@ -27,6 +28,9 @@ export type Profile = {
   specialty: string;
   military: string;
   industries: string;
+  hobby: string;
+  hobbyUrl: string;
+  contactEmail: string;
   certifications: string;
 };
 
@@ -39,6 +43,7 @@ export type ExperienceFormValues = {
   highlight: string;
   url: string;
   image: string;
+  featured: boolean;
 };
 
 export type ExperienceValidationErrors = Partial<Record<keyof ExperienceFormValues, string>>;

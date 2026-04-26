@@ -1,3 +1,4 @@
+import { useState } from "react";
 import { Award, BarChart3, BriefcaseBusiness, ShieldCheck, Sparkles, Target, TrendingUp } from "lucide-react";
 import { Card, CardContent } from "@/components/ui/card";
 import { categoryMeta, categoryOptions, profileHeaderIcon, profileInfoItems } from "@/data/resume";
@@ -58,13 +59,14 @@ export function ResumePreview({
             )}
           </div>
 
-          <div className={`grid items-start ${isCompactHeader ? "w-full gap-2 grid-cols-1 sm:gap-3 sm:grid-cols-2" : "gap-3 grid-cols-1 sm:grid-cols-2"}`}>
-            {profileInfoItems.map(({ key, label, icon }) => (
+          <div className={`grid auto-rows-fr items-stretch ${isCompactHeader ? "w-full gap-2 grid-cols-1 sm:gap-3 sm:grid-cols-2" : "gap-3 grid-cols-1 sm:grid-cols-2"}`}>
+            {profileInfoItems.map(({ key, label, icon, linkKey }) => (
               <InfoBox
                 key={key}
                 icon={icon}
                 label={label}
                 value={profileInfoValues[key]}
+                href={linkKey ? profileInfoValues[linkKey] : undefined}
               />
             ))}
           </div>
@@ -72,25 +74,28 @@ export function ResumePreview({
 
         <div className="mt-3 space-y-3 md:mt-6 md:space-y-6">
           {companyGroups.map(({ company, items }) => (
-            <section key={company.organization} className="rounded-[18px] border border-slate-200 bg-slate-50/70 p-3.5 sm:p-4" data-export-company>
-              <div className="flex flex-col gap-3 border-b border-slate-200 pb-3.5">
+            <section key={company.organization} className="overflow-hidden rounded-[18px] border border-slate-200 bg-slate-50/70" data-export-company>
+              <div className="border-b border-slate-800 bg-slate-900 px-3.5 py-3 text-white sm:px-4">
                 <div className="flex flex-col gap-2 md:flex-row md:items-start md:justify-between">
                   <div>
-                    <h3 className="text-lg font-semibold leading-6 text-slate-950">{company.organization}</h3>
-                    <p className="mt-1 text-[13px] leading-5 text-slate-600">
+                    <h3 className="text-lg font-semibold leading-6 text-white">{company.organization}</h3>
+                    <p className="mt-1 text-[13px] leading-5 text-slate-300">
                       {[company.department, company.position].filter(Boolean).join(" / ")}
                     </p>
                   </div>
-                  <div className="rounded-full border border-slate-200 bg-white px-3 py-1 text-[12px] font-medium leading-4 text-slate-600">
+                  <div className="rounded-full border border-white/15 bg-white/10 px-3 py-1 text-[12px] font-medium leading-4 text-slate-100 shadow-sm">
                     {company.period}
                   </div>
                 </div>
+              </div>
+
+              <div className="flex flex-col gap-3 border-b border-slate-200 p-3.5 sm:p-4">
                 <p className="text-sm leading-6 text-slate-600">{company.summary}</p>
                 <div className="grid gap-1 sm:grid-cols-2 md:grid-cols-3">
                   {company.responsibilities.map((responsibility) => (
                     <div
                       key={responsibility}
-                      className="flex min-h-[38px] items-center justify-center rounded-[10px] border border-slate-200 bg-white px-2 py-1 text-center text-[12px] font-semibold leading-4 text-slate-700"
+                      className="flex min-h-[28px] items-center justify-center rounded-[10px] border border-slate-200 bg-white px-1.5 py-0.5 text-center text-[12px] font-semibold leading-4 text-slate-700 md:min-h-[38px] md:px-2 md:py-1"
                     >
                       {responsibility}
                     </div>
@@ -98,7 +103,7 @@ export function ResumePreview({
                 </div>
               </div>
 
-              <div className="mt-4">
+              <div className="p-3.5 sm:p-4">
                 <div className="mb-3 flex items-center gap-3">
                   <div className="flex h-9 w-9 items-center justify-center rounded-[10px] bg-slate-900 text-white">
                     <BriefcaseBusiness className="h-4 w-4" />
@@ -183,6 +188,7 @@ export function CareerDashboard({
   profile: Profile;
   companies: CompanyProfile[];
 }) {
+  const [skillView, setSkillView] = useState<"orbit" | "chips" | "bars" | "list">("orbit");
   const totalProjects = items.length;
   const activeCategories = categoryOptions.filter((category) => items.some((item) => item.category === category)).length;
   const topCategory = categoryOptions
@@ -221,8 +227,14 @@ export function CareerDashboard({
       organization: company.organization,
       period: company.period ?? "",
     }));
-  const highlightProjects = [...items]
+  const selectedHighlightProjects = items.filter((item) => item.featured);
+  const highlightProjectsSource = selectedHighlightProjects.length ? selectedHighlightProjects : items;
+  const highlightProjects = [...highlightProjectsSource]
     .sort((left, right) => {
+      if (selectedHighlightProjects.length) {
+        return getPeriodScore(right.period) - getPeriodScore(left.period);
+      }
+
       const scoreGap = right.highlight.length - left.highlight.length;
       if (scoreGap !== 0) return scoreGap;
       return getPeriodScore(right.period) - getPeriodScore(left.period);
@@ -230,28 +242,35 @@ export function CareerDashboard({
     .slice(0, 4);
   const tagDistribution = [...keywordCounts.entries()].sort((left, right) => right[1] - left[1]);
   const complianceCoverage = collectCoverageKeywords(items, profile);
+  const strongestTagCount = Math.max(tagDistribution[0]?.[1] ?? 1, 1);
+  const skillViewOptions = [
+    { key: "orbit", label: "회전" },
+    { key: "chips", label: "칩" },
+    { key: "bars", label: "막대" },
+    { key: "list", label: "목록" },
+  ] as const;
 
   return (
-    <section className="overflow-hidden rounded-[20px] border-2 border-black bg-white">
-      <div className="rounded-[16px] bg-[linear-gradient(180deg,#ffffff_0%,#f8fafc_100%)] p-4 sm:p-5">
-        <div className="flex flex-col gap-2 border-b border-slate-200 pb-4">
-          <div className="flex items-center gap-3">
-            <div className="flex h-10 w-10 items-center justify-center rounded-[12px] bg-slate-950 text-white shadow-[0_10px_30px_rgba(15,23,42,0.18)]">
+    <section className="overflow-hidden rounded-[16px] border-2 border-black bg-white">
+      <div className="rounded-[14px] bg-[linear-gradient(180deg,#ffffff_0%,#f8fafc_100%)] p-2 md:p-4">
+        <div className="flex flex-col gap-2 border-b border-slate-200 pb-2 md:pb-3">
+          <div className="flex items-center gap-2.5">
+            <div className="flex h-9 w-9 items-center justify-center rounded-[10px] bg-slate-950 text-white shadow-[0_10px_30px_rgba(15,23,42,0.18)]">
               <BarChart3 className="h-4 w-4" />
             </div>
             <div>
-              <h3 className="text-lg font-semibold leading-6 text-slate-950">경력 대시보드</h3>
+              <h3 className="text-[24px] font-semibold leading-7 text-slate-950">경력 요약</h3>
             </div>
           </div>
         </div>
 
-        <div className="mt-2 grid gap-2 md:mt-4 md:gap-4 xl:grid-cols-2" data-export-dashboard-upper>
-          <div className="flex h-full w-full flex-col rounded-[18px] border border-slate-200 bg-[linear-gradient(135deg,#0f172a_0%,#1e293b_52%,#334155_100%)] p-5 text-white shadow-[0_18px_50px_rgba(15,23,42,0.18)]">
+        <div className="mt-2 grid gap-2 md:mt-3 md:gap-3 xl:grid-cols-2" data-export-dashboard-upper>
+          <div className="flex h-full w-full flex-col rounded-[14px] border border-slate-200 bg-[linear-gradient(135deg,#0f172a_0%,#1e293b_52%,#334155_100%)] p-4 text-white shadow-[0_18px_50px_rgba(15,23,42,0.18)]">
             <p className="text-[11px] font-semibold uppercase tracking-[0.24em] text-slate-300">Positioning</p>
             <div className="flex flex-1 flex-col">
-              <h4 className="mt-3 w-full text-xl font-semibold leading-8 sm:text-2xl">{profile.role}</h4>
-              <p className="mt-3 w-full text-[13px] leading-6 text-slate-300">{profile.summary}</p>
-              <div className="mt-auto flex flex-wrap gap-1 pt-4">
+              <h4 className="mt-2 w-full text-xl font-semibold leading-7 sm:text-2xl">{profile.role}</h4>
+              <p className="mt-2 w-full text-[13px] leading-5 text-slate-300">{profile.summary}</p>
+              <div className="mt-auto flex flex-wrap gap-1 pt-3">
                 {specialties.map((item) => (
                   <span key={item} className="rounded-[5px] border border-white/15 bg-white/10 px-1.5 py-0.5 text-[11px] leading-4 text-slate-100">
                     {item}
@@ -261,11 +280,11 @@ export function CareerDashboard({
             </div>
           </div>
 
-          <div className="grid gap-1.5 md:gap-3">
+          <div className="grid gap-1.5 md:gap-2.5">
             <AccentPanel icon={ShieldCheck} title="인증 / 컴플라이언스">
               <div className="flex flex-wrap gap-1">
                 {complianceCoverage.map((item) => (
-                  <span key={item} className="whitespace-nowrap rounded-[5px] border border-slate-200 bg-white px-1.5 py-0.5 text-[11px] leading-4 text-slate-700">
+                  <span key={item} className="whitespace-nowrap rounded-[5px] border border-slate-200 bg-white px-1 py-0 text-[11px] leading-4 text-slate-700 md:px-1.5 md:py-0.5">
                     {item}
                   </span>
                 ))}
@@ -274,7 +293,7 @@ export function CareerDashboard({
             <AccentPanel icon={Award} title="주요 자격">
               <div className="flex flex-wrap gap-1">
                 {certifications.map((item) => (
-                  <span key={item} className="whitespace-nowrap rounded-[5px] border border-slate-200 bg-white px-1.5 py-0.5 text-[11px] leading-4 text-slate-700">
+                  <span key={item} className="whitespace-nowrap rounded-[5px] border border-slate-200 bg-white px-1 py-0 text-[11px] leading-4 text-slate-700 md:px-1.5 md:py-0.5">
                     {item}
                   </span>
                 ))}
@@ -286,7 +305,7 @@ export function CareerDashboard({
           </div>
         </div>
 
-        <div className="mt-2 grid grid-cols-4 gap-1 md:mt-4 md:gap-3" data-export-kpis>
+        <div className="mt-2 grid grid-cols-4 gap-1 md:mt-3 md:gap-2.5" data-export-kpis>
           <DashboardStat icon={BriefcaseBusiness} label="총 프로젝트" value={`${totalProjects}건`} tone="from-slate-900 via-slate-700 to-slate-500" />
           <DashboardStat icon={Sparkles} label="활성 분야" value={`${activeCategories}개`} tone="from-cyan-700 via-sky-600 to-blue-500" />
           <DashboardStat
@@ -298,7 +317,7 @@ export function CareerDashboard({
           <DashboardStat icon={Sparkles} label="주요 태그" value={`${topKeywords.length}개`} tone="from-emerald-700 via-teal-600 to-lime-500" />
         </div>
 
-        <div className="mt-2.5 grid gap-2 items-stretch md:mt-5 md:gap-4 xl:grid-cols-[minmax(220px,max-content)_minmax(0,1fr)_minmax(260px,max-content)]" data-export-dashboard-lower data-export-dashboard-panels>
+        <div className="mt-2.5 grid gap-2 items-stretch md:mt-4 md:gap-3 xl:grid-cols-[minmax(220px,max-content)_minmax(0,1fr)_minmax(260px,max-content)]" data-export-dashboard-lower data-export-dashboard-panels>
           <div className="h-full p-0.5 md:p-1 xl:max-w-[320px]" data-export-role-timeline>
             <AccentPanel icon={TrendingUp} title="역할 변화 타임라인">
               <div className="flex h-full flex-col justify-between space-y-3">
@@ -316,34 +335,23 @@ export function CareerDashboard({
             </AccentPanel>
           </div>
 
-          <div className="flex h-full min-w-0 flex-col p-0.5 md:p-1" data-export-tag-distribution>
+          <div className="flex h-full min-h-0 min-w-0 flex-col p-0.5 md:p-1" data-export-tag-distribution>
             <p className="text-center text-sm font-semibold text-slate-900">핵심 역량 분포</p>
-            <div className="resume-skill-shield mt-1 flex min-h-[110px] flex-1 justify-center sm:min-h-[200px]">
+            <div className="mt-1 grid w-full grid-cols-4 gap-1">
+              {skillViewOptions.map((option) => (
+                <button
+                  key={option.key}
+                  type="button"
+                  className={`h-7 min-w-0 w-full rounded-[6px] border px-1 text-[11px] font-semibold leading-4 transition ${skillView === option.key ? "border-slate-950 bg-slate-950 text-white" : "border-slate-200 bg-white text-slate-600 hover:border-slate-300 hover:bg-slate-50"}`}
+                  onClick={() => setSkillView(option.key)}
+                >
+                  {option.label}
+                </button>
+              ))}
+            </div>
+            <div className="mt-1 flex min-h-0 flex-1 justify-center overflow-hidden rounded-[10px] border border-slate-200 bg-white/70 p-2">
               {tagDistribution.length ? (
-                <div className="resume-skill-shield__frame mx-auto">
-                  {tagDistribution.slice(0, 28).map(([tag, count], index) => {
-                    const strongestCount = Math.max(tagDistribution[0]?.[1] ?? 1, 1);
-                    const emphasis = count / strongestCount;
-                    const fontSize = index === 0 ? 18 + Math.round(emphasis * 6) : 11 + Math.round(emphasis * 4);
-                    const palette = ["#1d4ed8", "#2563eb", "#3b82f6", "#1e40af", "#60a5fa", "#0f172a"];
-
-                    return (
-                      <span
-                        key={tag}
-                        className="resume-skill-shield__item"
-                        style={{
-                          fontSize: `${fontSize}px`,
-                          color: palette[index % palette.length],
-                          opacity: index === 0 ? 0.96 : 0.72 + emphasis * 0.18,
-                          fontWeight: index === 0 ? 700 : index < 6 ? 600 : 500,
-                          letterSpacing: index === 0 ? "-0.05em" : "-0.03em",
-                        }}
-                      >
-                        {tag}
-                      </span>
-                    );
-                  })}
-                </div>
+                <SkillDistributionView view={skillView} tags={tagDistribution} strongestCount={strongestTagCount} />
               ) : (
                 <p className="text-[13px] leading-5 text-slate-500">프로젝트를 등록하면 설명 기반 자동 태그로 역량 분포가 표시됩니다.</p>
               )}
@@ -352,9 +360,9 @@ export function CareerDashboard({
 
           <div className="h-full p-0.5 md:p-1 xl:max-w-[360px]" data-export-highlight-projects>
             <AccentPanel icon={Target} title="대표 성과 하이라이트">
-              <div className="flex h-full flex-col space-y-2.5">
+              <div className="flex h-full flex-col space-y-1.5 md:space-y-2.5">
                 {highlightProjects.map((item) => (
-                  <div key={item.id} className="rounded-[12px] border border-slate-200 bg-white px-3 py-2.5">
+                  <div key={item.id} className="rounded-[12px] border border-slate-200 bg-white px-2 py-1.5 md:px-3 md:py-2.5">
                     <p className="text-[13px] font-medium leading-5 text-slate-900">{item.title}</p>
                     <p className="mt-1 text-[12px] leading-4 text-slate-500">
                       {item.organization} · {item.period}
@@ -382,12 +390,100 @@ function DashboardStat({
   tone: string;
 }) {
   return (
-    <div className={`min-w-0 rounded-[14px] border border-white/20 bg-gradient-to-br ${tone} bg-opacity-70 p-2 text-white shadow-[0_14px_36px_rgba(15,23,42,0.12)] sm:p-4`}>
+    <div className={`min-w-0 rounded-[12px] border border-white/20 bg-gradient-to-br ${tone} bg-opacity-70 p-2 text-white shadow-[0_14px_36px_rgba(15,23,42,0.12)] sm:p-3`}>
       <div className="flex items-center gap-1 text-white/80 sm:gap-2">
         <Icon className="h-3.5 w-3.5 sm:h-4 sm:w-4" />
         <span className="truncate text-[9px] leading-4 sm:text-[12px]">{label}</span>
       </div>
-      <p className="mt-1 truncate text-[10px] font-semibold leading-5 text-white sm:mt-2 sm:text-lg sm:leading-6">{value}</p>
+      <p className="mt-1 truncate text-[10px] font-semibold leading-5 text-white sm:text-lg sm:leading-6">{value}</p>
+    </div>
+  );
+}
+
+function SkillDistributionView({
+  view,
+  tags,
+  strongestCount,
+}: {
+  view: "orbit" | "chips" | "bars" | "list";
+  tags: [string, number][];
+  strongestCount: number;
+}) {
+  const topTags = tags.slice(0, 18);
+
+  if (view === "orbit") {
+    return (
+      <div className="resume-skill-shield">
+        <div className="resume-skill-shield__frame mx-auto">
+          {topTags.map(([tag, count], index) => {
+            const emphasis = count / strongestCount;
+            const fontSize = index === 0 ? 18 + Math.round(emphasis * 6) : 11 + Math.round(emphasis * 4);
+            const palette = ["#1d4ed8", "#2563eb", "#3b82f6", "#1e40af", "#60a5fa", "#0f172a"];
+
+            return (
+              <span
+                key={tag}
+                className="resume-skill-shield__item"
+                style={{
+                  fontSize: `${fontSize}px`,
+                  color: palette[index % palette.length],
+                  opacity: index === 0 ? 0.96 : 0.72 + emphasis * 0.18,
+                  fontWeight: index === 0 ? 700 : index < 6 ? 600 : 500,
+                  letterSpacing: index === 0 ? "-0.05em" : "-0.03em",
+                }}
+              >
+                {tag}
+              </span>
+            );
+          })}
+        </div>
+      </div>
+    );
+  }
+
+  if (view === "chips") {
+    return (
+      <div className="flex max-w-[560px] flex-wrap items-center justify-center gap-2">
+        {topTags.map(([tag, count], index) => (
+          <span
+            key={tag}
+            className={`inline-flex items-center gap-1.5 rounded-full border ${index === 0 ? "border-slate-950 bg-slate-950 px-4 py-2 text-lg font-bold text-white" : index < 5 ? "border-blue-200 bg-blue-50 px-3 py-1.5 text-sm font-semibold text-blue-700" : "border-slate-200 bg-white px-2.5 py-1 text-xs font-medium text-slate-600"}`}
+          >
+            {tag}
+            <span className={`rounded-full px-1.5 text-[10px] leading-4 ${index === 0 ? "bg-white/15 text-white" : "bg-white text-slate-500"}`}>{count}</span>
+          </span>
+        ))}
+      </div>
+    );
+  }
+
+  if (view === "bars") {
+    return (
+      <div className="grid w-full max-w-[560px] content-center gap-1.5">
+        {tags.slice(0, 8).map(([tag, count]) => (
+          <div key={tag} className="grid min-h-5 grid-cols-[minmax(104px,max-content)_minmax(72px,1fr)_32px] items-center gap-2 text-[12px]">
+            <span className="min-w-0 break-keep font-semibold leading-4 text-slate-700">{tag}</span>
+            <div className="h-2 overflow-hidden rounded-full bg-slate-100">
+              <div className="h-full rounded-full bg-blue-600" style={{ width: `${Math.max(12, (count / strongestCount) * 100)}%` }} />
+            </div>
+            <span className="text-right font-semibold text-slate-500">{count}</span>
+          </div>
+        ))}
+      </div>
+    );
+  }
+
+  return (
+    <div className="grid w-full max-w-[560px] content-center gap-1">
+      {tags.slice(0, 8).map(([tag, count], index) => (
+        <div key={tag} className="grid min-h-6 grid-cols-[minmax(0,1fr)_32px] items-center gap-2 rounded-[7px] border border-slate-200 bg-white px-2 py-0.5">
+          <div className="flex min-w-0 items-center gap-1.5">
+            <span className="flex h-4 w-4 shrink-0 items-center justify-center rounded-full bg-slate-950 text-[9px] font-bold leading-none text-white">{index + 1}</span>
+            <span className="min-w-0 break-keep text-[12px] font-semibold leading-4 text-slate-800">{tag}</span>
+          </div>
+          <span className="text-right text-[11px] font-semibold leading-4 text-slate-500">{count}회</span>
+        </div>
+      ))}
     </div>
   );
 }
@@ -402,12 +498,12 @@ function AccentPanel({
   children: React.ReactNode;
 }) {
   return (
-    <div className="flex h-full flex-col rounded-[16px] border border-slate-200 bg-white/90 p-4 shadow-[0_10px_30px_rgba(148,163,184,0.12)]">
+    <div className="flex h-full flex-col rounded-[12px] border border-slate-200 bg-white/90 p-2.5 shadow-[0_10px_30px_rgba(148,163,184,0.12)] md:p-3">
       <div className="flex items-center gap-2 text-slate-900">
         <Icon className="h-4 w-4 text-slate-600" />
         <p className="text-sm font-semibold">{title}</p>
       </div>
-      <div className="mt-3 flex-1">{children}</div>
+      <div className="mt-2 flex-1">{children}</div>
     </div>
   );
 }

@@ -209,6 +209,31 @@ export function ProfileForm({ ownerId, profile, isUploading = false, onChange, o
                   onChange={(e) => updateField("industries", e.target.value)}
                 />
               </FormField>
+              <FormField label="취미" className="h-full min-h-[80px]">
+                <textarea
+                  className="h-[80px] w-full self-start rounded-[10px] border border-slate-200 px-2.5 py-1.5 text-sm leading-5 outline-none"
+                  value={profile.hobby}
+                  onChange={(e) => updateField("hobby", e.target.value)}
+                  placeholder="예: 러닝 / 캠핑 / 독서"
+                />
+              </FormField>
+              <FormField label="취미 링크" className="h-full min-h-[80px]">
+                <Input
+                  value={profile.hobbyUrl}
+                  onChange={(e) => updateField("hobbyUrl", e.target.value)}
+                  placeholder="https://..."
+                />
+                <p className="mt-1 text-[12px] leading-4 text-slate-500">공개 보기의 취미 박스를 클릭 가능한 링크로 표시합니다.</p>
+              </FormField>
+              <FormField label="연락처" className="h-full min-h-[80px]">
+                <Input
+                  type="email"
+                  value={profile.contactEmail}
+                  onChange={(e) => updateField("contactEmail", e.target.value)}
+                  placeholder="name@example.com"
+                />
+                <p className="mt-1 text-[12px] leading-4 text-slate-500">공개 보기에서 이메일 링크로 표시됩니다.</p>
+              </FormField>
             </div>
           </div>
         </div>
