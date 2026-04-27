@@ -75,13 +75,9 @@ export function ExperienceCard({ item, isEditMode, onEdit, onRemove }: Experienc
           ) : null}
 
           {item.image ? (
-            <button
-              type="button"
-              className="mt-3 w-full overflow-hidden rounded-[10px] border border-slate-200 bg-slate-50 text-left transition hover:border-slate-300 focus:outline-none focus:ring-2 focus:ring-slate-900/20"
-              onClick={() => openImagePopup(item.image, item.title)}
-            >
+            <div className="mt-3 w-full overflow-hidden rounded-[10px] border border-slate-200 bg-slate-50">
               <img src={item.image} alt={`${item.title} 이미지`} className="h-auto max-h-[374px] w-full object-contain" />
-            </button>
+            </div>
           ) : null}
         </div>
       </div>
@@ -123,24 +119,6 @@ function openProjectPopup(event: MouseEvent<HTMLAnchorElement>, url: string) {
   if (!popup) {
     window.open(url, "_blank", "noopener,noreferrer");
   }
-}
-
-function openImagePopup(url: string, title: string) {
-  const popup = window.open(
-    "",
-    "resume-project-image",
-    "popup=yes,width=1180,height=820,left=120,top=80,noopener,noreferrer,scrollbars=yes,resizable=yes",
-  );
-
-  if (!popup) {
-    window.open(url, "_blank", "noopener,noreferrer");
-    return;
-  }
-
-  popup.document.title = `${title} 이미지`;
-  popup.document.body.style.margin = "0";
-  popup.document.body.style.background = "#0f172a";
-  popup.document.body.innerHTML = `<img src="${url}" alt="${title} 이미지" style="display:block;max-width:100%;max-height:100vh;margin:auto;object-fit:contain;" />`;
 }
 
 function getLinkPreview(url?: string) {

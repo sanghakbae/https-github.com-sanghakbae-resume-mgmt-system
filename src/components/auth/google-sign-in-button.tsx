@@ -5,15 +5,16 @@ type GoogleSignInButtonProps = {
   clientId: string;
   disabled?: boolean;
   compact?: boolean;
+  forceCompact?: boolean;
   onSuccess: (response: GoogleCredentialResponse) => void | Promise<void>;
 };
 
-export function GoogleSignInButton({ clientId, disabled, compact = false, onSuccess }: GoogleSignInButtonProps) {
+export function GoogleSignInButton({ clientId, disabled, compact = false, forceCompact = false, onSuccess }: GoogleSignInButtonProps) {
   const buttonRef = useRef<HTMLDivElement | null>(null);
   const googleRef = useRef<GoogleWindow["google"] | null>(null);
 
   useEffect(() => {
-    if (disabled || (compact ? false : !buttonRef.current)) return;
+    if (disabled || (compact || forceCompact ? false : !buttonRef.current)) return;
 
     const googleWindow = window as GoogleWindow;
     const google = googleWindow.google;
@@ -34,7 +35,7 @@ export function GoogleSignInButton({ clientId, disabled, compact = false, onSucc
       ux_mode: "popup",
     });
 
-    if (compact) return;
+    if (compact || forceCompact) return;
 
     google.accounts.id.renderButton(buttonRef.current, {
       theme: "outline",
@@ -43,9 +44,9 @@ export function GoogleSignInButton({ clientId, disabled, compact = false, onSucc
       shape: isMobileViewport ? "rectangular" : "pill",
       width: buttonWidth,
     });
-  }, [clientId, compact, disabled, onSuccess]);
+  }, [clientId, compact, disabled, forceCompact, onSuccess]);
 
-  if (compact) {
+  if (compact || forceCompact) {
     return (
       <button
         type="button"
@@ -53,7 +54,7 @@ export function GoogleSignInButton({ clientId, disabled, compact = false, onSucc
         onClick={() => googleRef.current?.accounts.id.prompt()}
       >
         <span className="font-semibold text-blue-600">G</span>
-        로그인
+        {compact ? "로그인" : "Google 계정으로 로그인"}
       </button>
     );
   }

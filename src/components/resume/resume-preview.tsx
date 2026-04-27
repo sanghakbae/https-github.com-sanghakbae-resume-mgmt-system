@@ -252,10 +252,10 @@ export function CareerDashboard({
 
   return (
     <section className="overflow-hidden rounded-[16px] border-2 border-black bg-white">
-      <div className="rounded-[14px] bg-[linear-gradient(180deg,#ffffff_0%,#f8fafc_100%)] p-2 md:p-4">
+      <div className="resume-dashboard-surface rounded-[14px] p-2 md:p-4">
         <div className="flex flex-col gap-2 border-b border-slate-200 pb-2 md:pb-3">
           <div className="flex items-center gap-2.5">
-            <div className="flex h-9 w-9 items-center justify-center rounded-[10px] bg-slate-950 text-white shadow-[0_10px_30px_rgba(15,23,42,0.18)]">
+            <div className="resume-dashboard-icon flex h-9 w-9 items-center justify-center rounded-[10px]">
               <BarChart3 className="h-4 w-4" />
             </div>
             <div>
@@ -265,7 +265,7 @@ export function CareerDashboard({
         </div>
 
         <div className="mt-2 grid gap-2 md:mt-3 md:gap-3 xl:grid-cols-2" data-export-dashboard-upper>
-          <div className="flex h-full w-full flex-col rounded-[14px] border border-slate-200 bg-[linear-gradient(135deg,#0f172a_0%,#1e293b_52%,#334155_100%)] p-4 text-white shadow-[0_18px_50px_rgba(15,23,42,0.18)]">
+          <div className="resume-positioning-card flex h-full w-full flex-col rounded-[14px] border border-slate-200 p-4 text-white">
             <p className="text-[11px] font-semibold uppercase tracking-[0.24em] text-slate-300">Positioning</p>
             <div className="flex flex-1 flex-col">
               <h4 className="mt-2 w-full text-xl font-semibold leading-7 sm:text-2xl">{profile.role}</h4>
@@ -306,15 +306,15 @@ export function CareerDashboard({
         </div>
 
         <div className="mt-2 grid grid-cols-4 gap-1 md:mt-3 md:gap-2.5" data-export-kpis>
-          <DashboardStat icon={BriefcaseBusiness} label="총 프로젝트" value={`${totalProjects}건`} tone="from-slate-900 via-slate-700 to-slate-500" />
-          <DashboardStat icon={Sparkles} label="활성 분야" value={`${activeCategories}개`} tone="from-cyan-700 via-sky-600 to-blue-500" />
+          <DashboardStat icon={BriefcaseBusiness} label="총 프로젝트" value={`${totalProjects}건`} tone="projects" />
+          <DashboardStat icon={Sparkles} label="활성 분야" value={`${activeCategories}개`} tone="categories" />
           <DashboardStat
             icon={BarChart3}
             label="주력 분야"
             value={topCategory ? categoryMeta[topCategory.category].label : "-"}
-            tone="from-violet-700 via-purple-600 to-fuchsia-500"
+            tone="focus"
           />
-          <DashboardStat icon={Sparkles} label="주요 태그" value={`${topKeywords.length}개`} tone="from-emerald-700 via-teal-600 to-lime-500" />
+          <DashboardStat icon={Sparkles} label="주요 태그" value={`${topKeywords.length}개`} tone="tags" />
         </div>
 
         <div className="mt-2.5 grid gap-2 items-stretch md:mt-4 md:gap-3 xl:grid-cols-[minmax(220px,max-content)_minmax(0,1fr)_minmax(260px,max-content)]" data-export-dashboard-lower data-export-dashboard-panels>
@@ -349,7 +349,7 @@ export function CareerDashboard({
                 </button>
               ))}
             </div>
-            <div className="mt-1 flex min-h-0 flex-1 justify-center overflow-hidden rounded-[10px] border border-slate-200 bg-white/70 p-2">
+            <div className="mt-1 flex min-h-0 w-full flex-1 items-stretch overflow-hidden rounded-[10px] border border-slate-200 bg-white/70 p-2">
               {tagDistribution.length ? (
                 <SkillDistributionView view={skillView} tags={tagDistribution} strongestCount={strongestTagCount} />
               ) : (
@@ -387,10 +387,10 @@ function DashboardStat({
   icon: typeof BriefcaseBusiness;
   label: string;
   value: string;
-  tone: string;
+  tone: "projects" | "categories" | "focus" | "tags";
 }) {
   return (
-    <div className={`min-w-0 rounded-[12px] border border-white/20 bg-gradient-to-br ${tone} bg-opacity-70 p-2 text-white shadow-[0_14px_36px_rgba(15,23,42,0.12)] sm:p-3`}>
+    <div className={`resume-stat resume-stat--${tone} min-w-0 rounded-[12px] border border-white/20 p-2 sm:p-3`}>
       <div className="flex items-center gap-1 text-white/80 sm:gap-2">
         <Icon className="h-3.5 w-3.5 sm:h-4 sm:w-4" />
         <span className="truncate text-[9px] leading-4 sm:text-[12px]">{label}</span>
@@ -414,7 +414,7 @@ function SkillDistributionView({
   if (view === "orbit") {
     return (
       <div className="resume-skill-shield">
-        <div className="resume-skill-shield__frame mx-auto">
+        <div className="resume-skill-shield__frame">
           {topTags.map(([tag, count], index) => {
             const emphasis = count / strongestCount;
             const fontSize = index === 0 ? 18 + Math.round(emphasis * 6) : 11 + Math.round(emphasis * 4);
@@ -443,7 +443,7 @@ function SkillDistributionView({
 
   if (view === "chips") {
     return (
-      <div className="flex max-w-[560px] flex-wrap items-center justify-center gap-2">
+      <div className="flex w-full flex-wrap items-center justify-center gap-2">
         {topTags.map(([tag, count], index) => (
           <span
             key={tag}
@@ -459,9 +459,9 @@ function SkillDistributionView({
 
   if (view === "bars") {
     return (
-      <div className="grid w-full max-w-[560px] content-center gap-1.5">
+      <div className="grid w-full content-center gap-1.5">
         {tags.slice(0, 8).map(([tag, count]) => (
-          <div key={tag} className="grid min-h-5 grid-cols-[minmax(104px,max-content)_minmax(72px,1fr)_32px] items-center gap-2 text-[12px]">
+          <div key={tag} className="grid min-h-5 w-full grid-cols-[minmax(96px,0.22fr)_minmax(0,1fr)_32px] items-center gap-2 text-[12px]">
             <span className="min-w-0 break-keep font-semibold leading-4 text-slate-700">{tag}</span>
             <div className="h-2 overflow-hidden rounded-full bg-slate-100">
               <div className="h-full rounded-full bg-blue-600" style={{ width: `${Math.max(12, (count / strongestCount) * 100)}%` }} />
@@ -474,7 +474,7 @@ function SkillDistributionView({
   }
 
   return (
-    <div className="grid w-full max-w-[560px] content-center gap-1">
+    <div className="grid w-full content-center gap-1">
       {tags.slice(0, 8).map(([tag, count], index) => (
         <div key={tag} className="grid min-h-6 grid-cols-[minmax(0,1fr)_32px] items-center gap-2 rounded-[7px] border border-slate-200 bg-white px-2 py-0.5">
           <div className="flex min-w-0 items-center gap-1.5">
@@ -498,7 +498,7 @@ function AccentPanel({
   children: React.ReactNode;
 }) {
   return (
-    <div className="flex h-full flex-col rounded-[12px] border border-slate-200 bg-white/90 p-2.5 shadow-[0_10px_30px_rgba(148,163,184,0.12)] md:p-3">
+    <div className="resume-panel-shadow flex h-full flex-col rounded-[12px] border border-slate-200 bg-white/90 p-2.5 md:p-3">
       <div className="flex items-center gap-2 text-slate-900">
         <Icon className="h-4 w-4 text-slate-600" />
         <p className="text-sm font-semibold">{title}</p>

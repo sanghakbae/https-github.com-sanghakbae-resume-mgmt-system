@@ -37,6 +37,8 @@ export function ExperienceForm({
   onRemove,
   onUploadImage,
 }: ExperienceFormProps) {
+  const sortedExperiences = [...experiences].sort((left, right) => getExperiencePeriodScore(right.period) - getExperiencePeriodScore(left.period));
+
   const updateField = <K extends keyof ExperienceFormValues>(key: K, value: ExperienceFormValues[K]) => {
     onChange((prev) => ({ ...prev, [key]: value }));
   };
@@ -167,7 +169,7 @@ export function ExperienceForm({
             <p className="text-[13px] font-medium leading-5 text-slate-700">등록된 수행 업무</p>
             {experiences.length ? (
               <div className="space-y-2">
-                {experiences.map((experience) => (
+                {sortedExperiences.map((experience) => (
                   <div
                     key={experience.id}
                     className={
@@ -214,4 +216,19 @@ export function ExperienceForm({
       </CardContent>
     </Card>
   );
+}
+
+function getExperiencePeriodScore(period: string) {
+  const normalized = period.trim();
+  if (!normalized) return 0;
+  if (normalized.includes("현재")) return 9999.99;
+
+  const candidates = normalized
+    .split("/")
+    .flatMap((range) => range.split("~"))
+    .flatMap((range) => range.split("-"))
+    .map((part) => Number.parseFloat(part.trim().replace(/\./g, ".")))
+    .filter((value) => Number.isFinite(value));
+
+  return Math.max(...candidates, 0);
 }

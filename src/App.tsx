@@ -140,6 +140,7 @@ export default function App() {
   });
   const headerButtonClass = "min-h-7 px-2.5 py-0.5 text-[10px] leading-4 md:text-[11px]";
   const mobileHeaderChipClass = "h-7 shrink-0 whitespace-nowrap rounded-[9px] border px-2 py-0 text-[10px] leading-4";
+  const publicHeaderControlClass = "h-7 w-full min-w-0 md:w-[180px]";
 
   useEffect(() => {
     if (typeof document === "undefined") return;
@@ -474,11 +475,11 @@ export default function App() {
                 </>
               ) : (
                 <>
-                  <div className={`${mobileHeaderChipClass} flex w-full min-w-0 items-center justify-center gap-1 border-slate-200 bg-slate-50 text-[12px] font-medium text-slate-600 md:h-auto md:w-auto md:min-w-[140px] md:px-2.5 md:py-1 md:text-[12px]`}>
+                  <div className={`${mobileHeaderChipClass} ${publicHeaderControlClass} flex items-center justify-center gap-1 border-slate-200 bg-slate-50 text-[12px] font-medium text-slate-600 md:px-2.5 md:text-[12px]`}>
                     방문 횟수: {visitCount}
                   </div>
                   {user ? (
-                    <div className={`${mobileHeaderChipClass} flex min-w-[120px] items-center gap-1.5 border-slate-200 bg-slate-50 text-slate-600 md:h-auto md:w-auto md:px-2.5 md:py-1 md:text-[12px]`}>
+                    <div className={`${mobileHeaderChipClass} ${publicHeaderControlClass} flex items-center gap-1.5 border-slate-200 bg-slate-50 text-slate-600 md:px-2.5 md:text-[12px]`}>
                       {user.picture ? <img src={user.picture} alt={user.name} className="h-5 w-5 rounded-full md:h-8 md:w-8" referrerPolicy="no-referrer" /> : null}
                       <div className="min-w-0 text-left">
                         <p className="truncate text-[10px] font-medium leading-4 text-slate-900 md:text-[13px]">{user.name}</p>
@@ -486,8 +487,8 @@ export default function App() {
                     </div>
                   ) : null}
                   {!user && googleClientId ? (
-                    <div className="min-w-0 shrink md:w-[240px]">
-                      <GoogleSignInButton clientId={googleClientId} compact={isMobilePreview} disabled={!isReady} onSuccess={signIn} />
+                    <div className={`${publicHeaderControlClass} shrink`}>
+                      <GoogleSignInButton clientId={googleClientId} compact={isMobilePreview} forceCompact={!isMobilePreview} disabled={!isReady} onSuccess={signIn} />
                     </div>
                   ) : null}
                   {!user && !googleClientId ? (
