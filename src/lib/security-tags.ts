@@ -37,21 +37,22 @@ const TAG_RULES: TagRule[] = [
   { tag: "SQL Injection", synonyms: ["sql injection", "sqlmap", "sqli"], categories: ["모의해킹", "취약점 진단"] },
   { tag: "WAF 우회", synonyms: ["waf 우회"], categories: ["모의해킹"] },
   { tag: "취약점 점검", synonyms: ["취약점 점검", "점검 자동화"], categories: ["취약점 진단"] },
+  { tag: "GS 인증", synonyms: ["gs 인증"], categories: ["개발/자동화"] },
   { tag: "하드닝", synonyms: ["하드닝", "hardening"], categories: ["취약점 진단", "보안 컨설팅"] },
   { tag: "시스템 하드닝", synonyms: ["시스템 하드닝", "hardening"], categories: ["취약점 진단", "보안 컨설팅"] },
   { tag: "침해사고 대응", synonyms: ["침해사고 대응", "incident response", "ir", "사고 대응"], categories: ["모의해킹", "보안 컨설팅"] },
   { tag: "침해사고 분석", synonyms: ["침해사고 분석", "포렌식", "forensic"], categories: ["모의해킹"] },
   { tag: "보안관제", synonyms: ["보안관제", "관제", "esm", "siem", "soc"], categories: ["개발/자동화", "보안 컨설팅"] },
-  { tag: "침해사고 대응 절차", synonyms: ["침해사고 대응 절차", "침해사고 대응", "사고 대응 절차"], categories: ["보안 컨설팅", "인증"] },
+  { tag: "침해사고 대응 절차", synonyms: ["침해사고 대응 절차", "사고 대응 절차"], categories: ["보안 컨설팅", "인증"] },
   { tag: "탐지 룰", synonyms: ["탐지 룰", "시그니처 룰", "signature"], categories: ["개발/자동화", "모의해킹"] },
   { tag: "FireEye", synonyms: ["fireeye"], categories: ["개발/자동화", "모의해킹"] },
   { tag: "ESM", synonyms: ["esm"], categories: ["개발/자동화", "모의해킹"] },
   { tag: "허니팟", synonyms: ["허니팟", "honeypot"], categories: ["개발/자동화", "모의해킹"] },
   { tag: "자동화 스크립트", synonyms: ["자동화 스크립트", "스크립트 고도화", "automation"], categories: ["개발/자동화"] },
   { tag: "보안 자동화", synonyms: ["자동화", "자동화 스크립트", "운영 자동화"], categories: ["개발/자동화"] },
-  { tag: "ITGC", synonyms: ["itgc"], categories: ["개발/자동화", "인증"] },
-  { tag: "통제 관리", synonyms: ["통제 관리", "통제항목"], categories: ["인증", "개발/자동화"] },
-  { tag: "증적 관리", synonyms: ["증적 관리", "증적"], categories: ["인증", "개발/자동화"] },
+  { tag: "ITGC", synonyms: ["itgc"], categories: ["개발/자동화"] },
+  { tag: "통제 관리", synonyms: ["통제 관리", "통제항목"], categories: ["개발/자동화", "인증"] },
+  { tag: "증적 관리", synonyms: ["증적 관리", "증적"], categories: ["개발/자동화", "인증"] },
   { tag: "운영 자동화", synonyms: ["운영 자동화", "자동화 운영"], categories: ["개발/자동화"] },
   { tag: "운영 현황 가시화", synonyms: ["운영 현황 가시화", "현황 가시화", "가시화"], categories: ["개발/자동화", "인증"] },
   { tag: "보안 운영", synonyms: ["보안 운영", "운영 체계", "보안시스템 운영"], categories: ["보안 컨설팅", "인증"] },
@@ -69,7 +70,7 @@ const TAG_RULES: TagRule[] = [
   { tag: "보안 인식 제고", synonyms: ["보안 인식", "인식 제고", "캠페인"], categories: ["보안 컨설팅", "인증"] },
   { tag: "개발보안", synonyms: ["개발보안", "secure coding"], categories: ["개발/자동화", "보안 컨설팅"] },
   { tag: "점검 가이드", synonyms: ["점검 가이드", "가이드 작성"], categories: ["보안 컨설팅", "취약점 진단"] },
-  { tag: "인증 대응", synonyms: ["인증 준비", "인증 대응", "인증 심사", "인증"], categories: ["인증"] },
+  { tag: "인증 대응", synonyms: ["인증 준비", "인증 대응", "인증 심사"], categories: ["인증"] },
   { tag: "ISMS", synonyms: ["isms"], categories: ["인증"] },
   { tag: "ISMS-P", synonyms: ["isms-p", "ismsp"], categories: ["인증"] },
   { tag: "ISO 27001", synonyms: ["iso 27001", "iso27001"], categories: ["인증"] },
@@ -122,6 +123,9 @@ function includesSynonym(source: string, synonym: string) {
   const normalizedSynonym = synonym.toLowerCase().trim();
   if (!normalizedSynonym) return false;
   if (/^[a-z0-9.+-]+$/.test(normalizedSynonym)) {
+    if (normalizedSynonym.length <= 3) {
+      return source.includes(` ${normalizedSynonym} `);
+    }
     return source.includes(` ${normalizedSynonym} `) || source.includes(normalizedSynonym);
   }
   return source.includes(normalizedSynonym);
@@ -139,20 +143,23 @@ function dedupeTags(tags: string[]) {
 
 function extractInlineProductTags(source: string) {
   const tags: string[] = [];
+  const blockedInlineTerms = new Set(["AI", "IT", "OT", "IR", "PL", "PM", "OA", "FA", "WEB", "SK", "SKT", "CJ", "LS", "NH", "KB", "KT", "CAT", "BNP", "KPMG", "Multi", "Homed"]);
+  const blockedKoreanPrefixes = ["KB", "NH", "KT", "SK", "CJ", "LS", "BNP", "KPMG"];
   const englishTerms = source.match(/\b[A-Z][A-Za-z0-9.+-]{1,23}\b/g) ?? [];
   for (const term of englishTerms) {
-    if (["AI", "IT", "OT", "IR", "PL", "PM"].includes(term)) continue;
+    if (blockedInlineTerms.has(term)) continue;
     if (/[0-9]/.test(term) && term.length < 4) continue;
     tags.push(term);
   }
 
   const koreanTerms = source.match(/[가-힣A-Za-z0-9/+-]{2,24}\s?(?:보안|인증|진단|점검|운영|분석|대응|관리체계|컴플라이언스|아키텍처|마스터플랜|프리세일즈)/g) ?? [];
-  tags.push(...koreanTerms.map((term) => term.trim()));
+  tags.push(...koreanTerms.map((term) => term.trim()).filter((term) => !blockedKoreanPrefixes.some((prefix) => term.startsWith(prefix))));
   return dedupeTags(tags);
 }
 
 export function inferExperienceCategory(input: ProjectTagInput): ResumeCategory {
   const source = normalizeText([input.title, input.organization, input.description, ...(input.existingTags ?? [])].join(" "));
+  const titleSource = normalizeText(input.title);
   const scores = new Map<ResumeCategory, number>([
     ["모의해킹", 0],
     ["취약점 진단", 0],
@@ -170,10 +177,34 @@ export function inferExperienceCategory(input: ProjectTagInput): ResumeCategory 
     }
   }
 
+  const hasResearchOrDetectionSignal = /waf|웹방화벽|시그니처|signature|허니팟|honeypot|스캐너|scanner|취약점 연구|공격 패턴/.test(source);
+  const hasCertificationStandardSignal = /isms|isms-p|iso 27001|iso27001|iso 27017|iso27017|csap|pci-dss|pcidss|gdpr|hipaa|cpra|appi|컴플라이언스|준거성|인증 심사|인증 대응|인증 준비/.test(source);
+
   if (source.includes("진단")) scores.set("취약점 진단", (scores.get("취약점 진단") ?? 0) + 1);
   if (source.includes("모의해킹")) scores.set("모의해킹", (scores.get("모의해킹") ?? 0) + 2);
-  if (source.includes("인증") || source.includes("준거성")) scores.set("인증", (scores.get("인증") ?? 0) + 2);
+  if (hasCertificationStandardSignal) scores.set("인증", (scores.get("인증") ?? 0) + 2);
   if (source.includes("개발") || source.includes("자동화")) scores.set("개발/자동화", (scores.get("개발/자동화") ?? 0) + 1);
+  if (source.includes("itgc") || source.includes("통제 관리시스템") || source.includes("증적 관리") || source.includes("운영 현황 가시화")) {
+    scores.set("개발/자동화", (scores.get("개발/자동화") ?? 0) + 5);
+    scores.set("인증", Math.max(0, (scores.get("인증") ?? 0) - 2));
+  }
+  if (source.includes("모의해킹") && !hasCertificationStandardSignal) {
+    scores.set("인증", Math.max(0, (scores.get("인증") ?? 0) - 2));
+  }
+  if (titleSource.includes("취약점 진단")) {
+    scores.set("취약점 진단", (scores.get("취약점 진단") ?? 0) + 6);
+    scores.set("인증", Math.max(0, (scores.get("인증") ?? 0) - 4));
+  }
+  if (titleSource.includes("모의해킹") && !titleSource.includes("인증") && !titleSource.includes("취약점 진단")) {
+    scores.set("모의해킹", (scores.get("모의해킹") ?? 0) + 6);
+    scores.set("인증", Math.max(0, (scores.get("인증") ?? 0) - 4));
+  }
+  if (hasResearchOrDetectionSignal) {
+    scores.set("모의해킹", (scores.get("모의해킹") ?? 0) + 4);
+    scores.set("취약점 진단", (scores.get("취약점 진단") ?? 0) + 3);
+    scores.set("개발/자동화", (scores.get("개발/자동화") ?? 0) + 2);
+    scores.set("인증", Math.max(0, (scores.get("인증") ?? 0) - 4));
+  }
   if (source.includes("ot") || source.includes("ics") || source.includes("scada")) {
     scores.set("클라우드 보안", (scores.get("클라우드 보안") ?? 0) + 3);
   }

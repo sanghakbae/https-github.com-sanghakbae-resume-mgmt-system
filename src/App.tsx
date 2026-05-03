@@ -664,23 +664,19 @@ export default function App() {
                             <CareerDashboard items={allExperiences} profile={derivedProfile} companies={companies} />
                           </CardContent>
                         </Card>
-                        <Card className="rounded-[10px] border border-slate-200 bg-white shadow-sm">
-                          <CardContent className="space-y-2 p-3.5 sm:p-4 md:space-y-4 md:p-5">
-                            <div>
-                              <h2 className="text-2xl font-extrabold leading-7 tracking-tight text-slate-950 drop-shadow-[0_1px_0_rgba(255,255,255,0.7)]">
-                                배상학 이력서
-                              </h2>
-                            </div>
-                            <ResumePreview
-                              isEditMode={effectiveIsEditMode}
-                              profile={derivedProfile}
-                              companies={companies}
-                              experiences={allExperiences}
-                              onEditExperience={startEditingExperience}
-                              onRemoveExperience={removeExperience}
-                            />
-                          </CardContent>
-                        </Card>
+                        <div className="space-y-2 md:space-y-4">
+                          <h2 className="text-2xl font-extrabold leading-7 tracking-tight text-slate-950 drop-shadow-[0_1px_0_rgba(255,255,255,0.7)]">
+                            배상학 이력서
+                          </h2>
+                          <ResumePreview
+                            isEditMode={effectiveIsEditMode}
+                            profile={derivedProfile}
+                            companies={companies}
+                            experiences={allExperiences}
+                            onEditExperience={startEditingExperience}
+                            onRemoveExperience={removeExperience}
+                          />
+                        </div>
                         <GeneratedExperiencePanel
                           variant="portfolio"
                           title="포트폴리오"
@@ -844,20 +840,40 @@ function GeneratedExperiencePanel({
   onEdit: (experience: ExperienceItem) => void;
   onRemove: (id: number) => void;
 }) {
+  if (variant === "portfolio") {
+    return (
+      <Card className="overflow-hidden rounded-[10px] border border-sky-100 bg-white shadow-sm screen-only">
+        <CardContent className="space-y-3 p-0">
+          <div className="flex items-center justify-between gap-3 border-b border-sky-900 bg-sky-900 px-3.5 py-3 text-white sm:px-4">
+            <h2 className="text-lg font-semibold leading-6">{title}</h2>
+            <span className="rounded-full bg-white/15 px-2 py-0.5 text-[11px] font-semibold leading-4 text-sky-50">{items.length}건</span>
+          </div>
+
+          <div className="px-3.5 pb-3.5 sm:px-4 sm:pb-4">
+            {items.length ? (
+              <div className="grid gap-2">
+                {items.map((item) => (
+                  <PortfolioArtifactCard key={`${title}-${item.id}`} item={item} isEditMode={isEditMode} onEdit={onEdit} onRemove={onRemove} />
+                ))}
+              </div>
+            ) : (
+              <div className="rounded-[10px] border border-dashed border-slate-200 bg-white px-3 py-6 text-center text-[13px] leading-5 text-slate-500">
+                {emptyMessage}
+              </div>
+            )}
+          </div>
+        </CardContent>
+      </Card>
+    );
+  }
+
   const panelTone =
-    variant === "portfolio"
-      ? {
-          card: "border-sky-200 bg-sky-50/50",
-          header: "border-sky-200 bg-sky-900 text-white",
-          badge: "bg-white/15 text-sky-50",
-          body: "bg-white",
-        }
-      : {
-          card: "border-slate-300 bg-slate-50",
-          header: "border-slate-300 bg-slate-950 text-white",
-          badge: "bg-white/15 text-slate-50",
-          body: "bg-white",
-        };
+    {
+      card: "border-slate-300 bg-slate-50",
+      header: "border-slate-300 bg-slate-950 text-white",
+      badge: "bg-white/15 text-slate-50",
+      body: "bg-white",
+    };
 
   return (
     <Card className={`overflow-hidden rounded-[10px] border shadow-sm ${panelTone.card}`}>
@@ -872,17 +888,9 @@ function GeneratedExperiencePanel({
           {description ? <p className="text-[13px] leading-5 text-white/75">{description}</p> : null}
         </div>
 
-        <div className={`mx-3.5 mb-3.5 rounded-[10px] sm:mx-4 sm:mb-4 ${panelTone.body}`}>
+        <div className={`px-3.5 pb-3.5 sm:px-4 sm:pb-4 ${panelTone.body}`}>
           {items.length ? (
-            variant === "technical" ? (
-              <TechnicalCareerNarrative items={items} />
-            ) : (
-            <div className="grid gap-2">
-              {items.map((item) => (
-                <PortfolioArtifactCard key={`${title}-${item.id}`} item={item} isEditMode={isEditMode} onEdit={onEdit} onRemove={onRemove} />
-              ))}
-            </div>
-            )
+            <TechnicalCareerNarrative items={items} />
           ) : (
             <div className="rounded-[10px] border border-dashed border-slate-200 bg-white px-3 py-6 text-center text-[13px] leading-5 text-slate-500">
               {emptyMessage}
@@ -906,24 +914,25 @@ function PortfolioArtifactCard({
   onRemove: (id: number) => void;
 }) {
   return (
-    <div className="rounded-[10px] border border-slate-200 bg-white p-3.5 sm:p-4">
-      <div className="flex flex-col gap-2 sm:flex-row sm:items-start sm:justify-between">
+    <div className="rounded-[10px] border border-sky-100 bg-white p-3.5 sm:p-4">
+      <div className="grid gap-3 lg:grid-cols-[minmax(0,1fr)_minmax(220px,34%)] lg:items-start">
         <div className="min-w-0">
-          <h3 className="text-base font-semibold leading-6 text-slate-950">{item.title}</h3>
-          <p className="mt-0.5 text-[13px] leading-5 text-slate-500">
-            {item.organization} · {item.period}
-          </p>
-        </div>
-        {isEditMode ? (
-          <Button className="shrink-0 border border-slate-200 bg-white px-2.5 py-1.5 text-[12px] text-slate-700" onClick={() => onEdit(item)}>
-            <Pencil className="mr-1.5 h-3.5 w-3.5" />
-            수정
-          </Button>
-        ) : null}
-      </div>
+          <div className="flex flex-col gap-2 sm:flex-row sm:items-start sm:justify-between">
+            <div className="min-w-0">
+              <h3 className="text-base font-semibold leading-6 text-slate-950">{item.title}</h3>
+              <p className="mt-0.5 text-[13px] leading-5 text-slate-500">
+                {item.organization} · {item.period}
+              </p>
+            </div>
+            {isEditMode ? (
+              <Button className="shrink-0 border border-slate-200 bg-white px-2.5 py-1.5 text-[12px] text-slate-700" onClick={() => onEdit(item)}>
+                <Pencil className="mr-1.5 h-3.5 w-3.5" />
+                수정
+              </Button>
+            ) : null}
+          </div>
 
-      <div className="mt-3 grid gap-3 lg:grid-cols-[minmax(0,1fr)_minmax(220px,34%)] lg:items-start">
-        <div>
+          <div className="mt-3">
           <p className="text-sm leading-6 text-slate-700">{summarizePortfolioDescription(item.description)}</p>
           {item.highlight.length ? (
             <div className="mt-3 flex flex-wrap gap-1">
@@ -932,6 +941,15 @@ function PortfolioArtifactCard({
                   {tag}
                 </span>
               ))}
+            </div>
+          ) : null}
+          </div>
+
+          {isEditMode ? (
+            <div className="mt-3 flex justify-end">
+              <Button className="border border-slate-200 bg-white px-2.5 py-1.5 text-[12px] text-rose-600" onClick={() => onRemove(item.id)}>
+                삭제
+              </Button>
             </div>
           ) : null}
         </div>
@@ -945,14 +963,6 @@ function PortfolioArtifactCard({
           ) : null}
         </div>
       </div>
-
-      {isEditMode ? (
-        <div className="mt-3 flex justify-end">
-          <Button className="border border-slate-200 bg-white px-2.5 py-1.5 text-[12px] text-rose-600" onClick={() => onRemove(item.id)}>
-            삭제
-          </Button>
-        </div>
-      ) : null}
     </div>
   );
 }
@@ -986,15 +996,15 @@ function TechnicalCareerNarrative({ items }: { items: ExperienceItem[] }) {
   const { summary, companies } = buildTechnicalCareerNarrative(items);
 
   return (
-    <article className="rounded-[10px] border border-slate-200 bg-white px-4 py-4 sm:px-5 sm:py-5">
+    <article className="rounded-[10px] border border-slate-200 bg-white px-4 pb-6 pt-4 sm:px-5 sm:pb-7 sm:pt-5">
       <div>
         <h3 className="text-base font-semibold leading-6 text-slate-950">Summary</h3>
         <p className="mt-2 text-sm leading-7 text-slate-700">{summary}</p>
       </div>
 
-      <div className="mt-5 space-y-4">
+      <div className="mt-5 space-y-5">
         {companies.map((company) => (
-          <section key={company.organization} className="border-t border-slate-100 pt-4">
+          <section key={company.organization} className="border-t border-slate-100 pt-4 last:pb-1">
             <h4 className="text-sm font-semibold leading-5 text-slate-950">{company.organization}</h4>
             <p className="mt-1.5 text-sm leading-7 text-slate-700">{company.description}</p>
           </section>

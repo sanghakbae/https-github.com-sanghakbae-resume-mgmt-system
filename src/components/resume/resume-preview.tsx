@@ -33,10 +33,10 @@ export function ResumePreview({
   const isCompactHeader = !isEditMode;
 
   return (
-    <Card className="rounded-[10px] border border-slate-200 bg-white shadow-sm" data-export-resume>
-      <CardContent className="p-2.5 sm:p-4 md:p-5" data-export-resume-content>
+    <div data-export-resume>
+      <div className="space-y-3 md:space-y-4" data-export-resume-content>
         <div
-          className={`border-b border-slate-200 pb-4 sm:pb-5 ${isCompactHeader ? "grid gap-4 sm:grid-cols-[140px_minmax(0,1fr)] sm:items-start" : "flex flex-col gap-4 lg:flex-row lg:items-start lg:justify-between"}`}
+          className={`rounded-[10px] border border-slate-200 bg-white p-3.5 sm:p-4 md:p-5 ${isCompactHeader ? "grid gap-4 sm:grid-cols-[140px_minmax(0,1fr)] sm:items-start" : "flex flex-col gap-4 lg:flex-row lg:items-start lg:justify-between"}`}
           data-export-intro
         >
           <div className={`flex flex-col ${isCompactHeader ? "items-center gap-0.5" : "gap-3"}`}>
@@ -74,7 +74,7 @@ export function ResumePreview({
 
         <div className="mt-3 space-y-3 md:mt-6 md:space-y-6">
           {companyGroups.map(({ company, items }) => (
-            <section key={company.organization} className="overflow-hidden rounded-[18px] border border-slate-200 bg-slate-50/70" data-export-company>
+            <section key={company.organization} className="overflow-hidden rounded-[18px] border border-slate-200 bg-white" data-export-company>
               <div className="border-b border-slate-800 bg-slate-900 px-3.5 py-3 text-white sm:px-4">
                 <div className="flex flex-col gap-2 md:flex-row md:items-start md:justify-between">
                   <div>
@@ -141,8 +141,8 @@ export function ResumePreview({
             </div>
           ) : null}
         </div>
-      </CardContent>
-    </Card>
+      </div>
+    </div>
   );
 }
 
