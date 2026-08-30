@@ -1,5 +1,5 @@
 import { useEffect, useMemo, useRef, useState } from "react";
-import { BarChart3, Building2, BriefcaseBusiness, Download, ExternalLink, Eye, FileText, FolderKanban, LogOut, Pencil, RotateCcw, Settings2, ShieldAlert, ShieldCheck, UserRound, X } from "lucide-react";
+import { BarChart3, Building2, BriefcaseBusiness, Download, ExternalLink, Eye, FileText, FolderKanban, LogOut, Pencil, RotateCcw, Settings2, ShieldAlert, ShieldCheck, Smartphone, UserRound, X } from "lucide-react";
 import { GoogleSignInButton } from "@/components/auth/google-sign-in-button";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent } from "@/components/ui/card";
@@ -31,6 +31,7 @@ import type {
 
 const DEFAULT_PRIMARY_WORKSPACE_ID = "public-resume";
 const FONT_STORAGE_KEY = "resume.font-family";
+const PWA_INSTALL_DISMISSED_KEY = "resume.pwa-install-dismissed";
 const FONT_OPTIONS = [
   {
     value: "pretendard",
@@ -58,6 +59,11 @@ const FONT_OPTIONS = [
     stack: '"Apple SD Gothic Neo", "Pretendard", "Noto Sans KR", sans-serif',
   },
 ] as const;
+
+type BeforeInstallPromptEvent = Event & {
+  prompt: () => Promise<void>;
+  userChoice: Promise<{ outcome: "accepted" | "dismissed"; platform: string }>;
+};
 
 function validateExperience(form: ExperienceFormValues): ExperienceValidationErrors {
   const errors: ExperienceValidationErrors = {};
@@ -127,6 +133,49 @@ function downloadUrl(url: string, fileName: string) {
   link.remove();
 }
 
+function PwaInstallPrompt({
+  canInstall,
+  onInstall,
+  onDismiss,
+}: {
+  canInstall: boolean;
+  onInstall: () => void;
+  onDismiss: () => void;
+}) {
+  return (
+    <div data-testid="pwa-install-prompt" className="screen-only md:hidden rounded-[9px] border border-sky-100 bg-white px-2.5 py-2 shadow-sm">
+      <div className="flex items-start gap-2">
+        <div className="mt-0.5 flex h-7 w-7 shrink-0 items-center justify-center rounded-[8px] bg-slate-950 text-white">
+          <Smartphone className="h-4 w-4" />
+        </div>
+        <div className="min-w-0 flex-1">
+          <p className="text-[13px] font-semibold leading-5 text-slate-950">홈 화면에 설치</p>
+          <p className="mt-0.5 text-[11px] leading-4 text-slate-500">
+            {canInstall ? "설치하면 앱처럼 바로 열 수 있습니다." : "브라우저 메뉴나 공유 버튼에서 홈 화면에 추가할 수 있습니다."}
+          </p>
+        </div>
+        {canInstall ? (
+          <button
+            type="button"
+            onClick={onInstall}
+            className="h-7 shrink-0 rounded-[8px] border border-slate-950 bg-slate-950 px-2.5 text-[11px] font-semibold leading-4 text-white"
+          >
+            설치
+          </button>
+        ) : null}
+        <button
+          type="button"
+          onClick={onDismiss}
+          className="flex h-7 w-7 shrink-0 items-center justify-center rounded-[8px] border border-slate-200 bg-white text-slate-500"
+          aria-label="홈 화면 설치 안내 닫기"
+        >
+          <X className="h-3.5 w-3.5" />
+        </button>
+      </div>
+    </div>
+  );
+}
+
 export default function App() {
   const isPublicResumeMode = ((import.meta.env.VITE_PUBLIC_RESUME_MODE as string | undefined) ?? "false") === "true";
   const adminEmails = parseEnvEmailList(import.meta.env.VITE_ADMIN_EMAILS as string | undefined);
@@ -162,6 +211,9 @@ export default function App() {
   const [fontFamily, setFontFamily] = useState<string>(() => getSavedFontFamily());
   const [isDownloadingPdf, setIsDownloadingPdf] = useState(false);
   const [linkPopupUrl, setLinkPopupUrl] = useState<string | null>(null);
+  const [deferredInstallPrompt, setDeferredInstallPrompt] = useState<BeforeInstallPromptEvent | null>(null);
+  const [isPwaInstallVisible, setIsPwaInstallVisible] = useState(false);
+  const [isStandaloneApp, setIsStandaloneApp] = useState(false);
   const visitOwnerRef = useRef<string | null>(null);
   const activeOwnerId = isPublicResumeMode ? primaryWorkspaceId : currentWorkspaceId;
   const effectiveIsEditMode = canEdit && isEditMode;
@@ -198,6 +250,46 @@ export default function App() {
   const headerButtonClass = "min-h-7 px-2.5 py-0.5 text-[10px] leading-4 md:text-[11px]";
   const mobileHeaderChipClass = "h-7 shrink-0 whitespace-nowrap rounded-[9px] border px-1.5 py-0 text-[10px] leading-4 sm:px-2";
   const publicHeaderControlClass = "h-7 w-full min-w-0 md:w-[180px]";
+
+  useEffect(() => {
+    if (typeof window === "undefined") return;
+
+    const standaloneQuery = window.matchMedia("(display-mode: standalone)");
+    const getIsStandalone = () => standaloneQuery.matches || (window.navigator as Navigator & { standalone?: boolean }).standalone === true;
+    const isDismissed = () => window.localStorage.getItem(PWA_INSTALL_DISMISSED_KEY) === "true";
+    const updateStandaloneState = () => {
+      const nextIsStandalone = getIsStandalone();
+      setIsStandaloneApp(nextIsStandalone);
+      if (nextIsStandalone) setIsPwaInstallVisible(false);
+    };
+    const handleBeforeInstallPrompt = (event: Event) => {
+      event.preventDefault();
+      setDeferredInstallPrompt(event as BeforeInstallPromptEvent);
+      if (!getIsStandalone() && !isDismissed()) {
+        setIsPwaInstallVisible(true);
+      }
+    };
+    const handleAppInstalled = () => {
+      setDeferredInstallPrompt(null);
+      setIsPwaInstallVisible(false);
+      window.localStorage.setItem(PWA_INSTALL_DISMISSED_KEY, "true");
+    };
+
+    updateStandaloneState();
+    if (!getIsStandalone() && !isDismissed()) {
+      setIsPwaInstallVisible(true);
+    }
+
+    window.addEventListener("beforeinstallprompt", handleBeforeInstallPrompt);
+    window.addEventListener("appinstalled", handleAppInstalled);
+    standaloneQuery.addEventListener("change", updateStandaloneState);
+
+    return () => {
+      window.removeEventListener("beforeinstallprompt", handleBeforeInstallPrompt);
+      window.removeEventListener("appinstalled", handleAppInstalled);
+      standaloneQuery.removeEventListener("change", updateStandaloneState);
+    };
+  }, []);
 
   useEffect(() => {
     if (typeof document === "undefined") return;
@@ -352,6 +444,23 @@ export default function App() {
     setCompanyForm(emptyCompanyForm);
     setCompanyErrors({});
     setEditingCompanyOrganization(null);
+  };
+
+  const dismissPwaInstallPrompt = () => {
+    window.localStorage.setItem(PWA_INSTALL_DISMISSED_KEY, "true");
+    setIsPwaInstallVisible(false);
+  };
+
+  const installPwa = async () => {
+    if (!deferredInstallPrompt) return;
+    const installPrompt = deferredInstallPrompt;
+    setDeferredInstallPrompt(null);
+    await installPrompt.prompt();
+    const choice = await installPrompt.userChoice;
+    if (choice.outcome === "accepted") {
+      window.localStorage.setItem(PWA_INSTALL_DISMISSED_KEY, "true");
+      setIsPwaInstallVisible(false);
+    }
   };
 
   const submitCompany = () => {
@@ -941,6 +1050,14 @@ export default function App() {
             </div>
           </CardContent>
         </Card>
+
+        {isPublicResumeMode && !effectiveIsEditMode && isPwaInstallVisible && !isStandaloneApp ? (
+          <PwaInstallPrompt
+            canInstall={Boolean(deferredInstallPrompt)}
+            onInstall={installPwa}
+            onDismiss={dismissPwaInstallPrompt}
+          />
+        ) : null}
 
         <div className="min-h-0 flex-1 pr-0 sm:pr-1">
           <div className="space-y-1.5 pb-2 md:space-y-5 md:pb-4">
