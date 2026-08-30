@@ -133,6 +133,22 @@ function downloadUrl(url: string, fileName: string) {
   link.remove();
 }
 
+function getPwaInstallDismissed() {
+  try {
+    return window.localStorage.getItem(PWA_INSTALL_DISMISSED_KEY) === "true";
+  } catch {
+    return false;
+  }
+}
+
+function setPwaInstallDismissed() {
+  try {
+    window.localStorage.setItem(PWA_INSTALL_DISMISSED_KEY, "true");
+  } catch {
+    // Storage may be unavailable in strict private browsing modes.
+  }
+}
+
 function PwaInstallPrompt({
   canInstall,
   onInstall,
@@ -256,7 +272,6 @@ export default function App() {
 
     const standaloneQuery = window.matchMedia("(display-mode: standalone)");
     const getIsStandalone = () => standaloneQuery.matches || (window.navigator as Navigator & { standalone?: boolean }).standalone === true;
-    const isDismissed = () => window.localStorage.getItem(PWA_INSTALL_DISMISSED_KEY) === "true";
     const updateStandaloneState = () => {
       const nextIsStandalone = getIsStandalone();
       setIsStandaloneApp(nextIsStandalone);
@@ -265,29 +280,37 @@ export default function App() {
     const handleBeforeInstallPrompt = (event: Event) => {
       event.preventDefault();
       setDeferredInstallPrompt(event as BeforeInstallPromptEvent);
-      if (!getIsStandalone() && !isDismissed()) {
+      if (!getIsStandalone() && !getPwaInstallDismissed()) {
         setIsPwaInstallVisible(true);
       }
     };
     const handleAppInstalled = () => {
       setDeferredInstallPrompt(null);
       setIsPwaInstallVisible(false);
-      window.localStorage.setItem(PWA_INSTALL_DISMISSED_KEY, "true");
+      setPwaInstallDismissed();
     };
 
     updateStandaloneState();
-    if (!getIsStandalone() && !isDismissed()) {
+    if (!getIsStandalone() && !getPwaInstallDismissed()) {
       setIsPwaInstallVisible(true);
     }
 
     window.addEventListener("beforeinstallprompt", handleBeforeInstallPrompt);
     window.addEventListener("appinstalled", handleAppInstalled);
-    standaloneQuery.addEventListener("change", updateStandaloneState);
+    if ("addEventListener" in standaloneQuery) {
+      standaloneQuery.addEventListener("change", updateStandaloneState);
+    } else {
+      standaloneQuery.addListener(updateStandaloneState);
+    }
 
     return () => {
       window.removeEventListener("beforeinstallprompt", handleBeforeInstallPrompt);
       window.removeEventListener("appinstalled", handleAppInstalled);
-      standaloneQuery.removeEventListener("change", updateStandaloneState);
+      if ("removeEventListener" in standaloneQuery) {
+        standaloneQuery.removeEventListener("change", updateStandaloneState);
+      } else {
+        standaloneQuery.removeListener(updateStandaloneState);
+      }
     };
   }, []);
 
@@ -447,7 +470,7 @@ export default function App() {
   };
 
   const dismissPwaInstallPrompt = () => {
-    window.localStorage.setItem(PWA_INSTALL_DISMISSED_KEY, "true");
+    setPwaInstallDismissed();
     setIsPwaInstallVisible(false);
   };
 
@@ -455,11 +478,16 @@ export default function App() {
     if (!deferredInstallPrompt) return;
     const installPrompt = deferredInstallPrompt;
     setDeferredInstallPrompt(null);
-    await installPrompt.prompt();
-    const choice = await installPrompt.userChoice;
-    if (choice.outcome === "accepted") {
-      window.localStorage.setItem(PWA_INSTALL_DISMISSED_KEY, "true");
-      setIsPwaInstallVisible(false);
+    try {
+      await installPrompt.prompt();
+      const choice = await installPrompt.userChoice;
+      if (choice.outcome === "accepted") {
+        setPwaInstallDismissed();
+        setIsPwaInstallVisible(false);
+      }
+    } catch (error) {
+      console.warn("PWA 설치 프롬프트를 표시하지 못했습니다.", error);
+      setIsPwaInstallVisible(true);
     }
   };
 
